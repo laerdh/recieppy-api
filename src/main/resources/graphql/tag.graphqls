@@ -1,0 +1,8 @@
+type Tag {
+    id: ID!
+    text: String!
+}
+
+extend type Query {
+    tags: [Tag]!
+}

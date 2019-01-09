@@ -1,0 +1,13 @@
+type Recipe {
+    id: ID!
+    title: String!
+    url: String
+    imageUrl: String
+    site: String
+    tags: [Tag]
+}
+
+type Query {
+    recipe(id: ID): Recipe
+    recipes: [Recipe]!
+}

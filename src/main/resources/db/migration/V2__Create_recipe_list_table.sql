@@ -1,0 +1,5 @@
+CREATE TABLE recipe_list (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR NOT NULL,
+  created DATE NOT NULL
+);
