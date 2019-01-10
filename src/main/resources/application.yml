@@ -3,7 +3,7 @@ spring:
     name: recieppy-api
 
 server:
-  port: 8081
+  port: 8080
 
 graphql:
   servlet:
@@ -15,6 +15,20 @@ graphql:
 
 spring:
   profiles: development
+
+  application:
+    name: recieppy-dev-api
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+---
+
+spring:
+  profiles: production
 
   application:
     name: recieppy-dev-api
