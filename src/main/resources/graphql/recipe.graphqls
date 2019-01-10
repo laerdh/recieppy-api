@@ -11,3 +11,7 @@ type Query {
     recipe(id: ID): Recipe
     recipes: [Recipe]!
 }
+
+type Mutation {
+    newRecipe(title: String, url: String, imageUrl: String, site: String, recipeListId: ID): Recipe
+}

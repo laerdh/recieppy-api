@@ -1,0 +1,15 @@
+type RecipeList {
+    id: ID!
+    name: String!
+    created: String!
+    recipes: [Recipe]
+}
+
+extend type Query {
+    recipeList(id: ID): RecipeList
+    recipeLists: [RecipeList]!
+}
+
+extend type Mutation {
+    newRecipeList(name: String, userId: ID): RecipeList
+}
