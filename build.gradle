@@ -22,6 +22,7 @@ apply plugin: 'kotlin-spring'
 apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'org.flywaydb.flyway'
 
 group = 'com.ledahl.apps'
 version = '0.0.1-SNAPSHOT'
@@ -47,6 +48,7 @@ dependencies {
 	implementation('org.springframework.boot:spring-boot-starter')
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	compile('org.flywaydb:flyway-core:5.2.4')
 	compile group: 'org.postgresql', name: 'postgresql', version: '42.2.5'
 	compile group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc', version: '2.0.4.RELEASE'
 	compile group: 'com.graphql-java', name: 'graphql-spring-boot-starter', version: '5.0.2'
