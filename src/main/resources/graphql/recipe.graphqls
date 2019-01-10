@@ -12,6 +12,15 @@ type Query {
     recipes: [Recipe]!
 }
 
+input RecipeInput {
+    title: String!
+    url: String
+    imageUrl: String
+    site: String
+    recipeListId: ID!
+    tags: [ID]
+}
+
 type Mutation {
-    newRecipe(title: String, url: String, imageUrl: String, site: String, recipeListId: ID): Recipe
+    newRecipe(input: RecipeInput): Recipe
 }

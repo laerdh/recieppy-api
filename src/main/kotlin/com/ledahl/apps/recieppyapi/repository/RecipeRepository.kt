@@ -51,7 +51,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("id", id)
 
         return namedTemplate.query(
-                "SELECT r.id, r.title, r.url, r.image_url, r.site " +
+                "SELECT r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id " +
                         "FROM recipe_list rl " +
                         "INNER JOIN recipe r on rl.id = r.recipe_list_id " +
                         "WHERE rl.id = :id",
@@ -80,5 +80,18 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameters["recipe_list_id"] = recipe.recipeListId
 
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
+    }
+
+    fun saveTagsToRecipe(recipeId: Long, tags: List<Long>) {
+        tags.forEach { tagId ->
+            val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
+                    .withTableName("recipe_tag")
+
+            val parameters = HashMap<String, Any>()
+            parameters["recipe_id"] = recipeId
+            parameters["tag_id"] = tagId
+
+            simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
+        }
     }
 }

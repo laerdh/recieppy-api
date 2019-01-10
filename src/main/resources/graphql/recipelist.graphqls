@@ -10,6 +10,11 @@ extend type Query {
     recipeLists: [RecipeList]!
 }
 
+input RecipeListInput {
+    name: String!
+    creatorId: ID!
+}
+
 extend type Mutation {
-    newRecipeList(name: String, userId: ID): RecipeList
+    newRecipeList(input: RecipeListInput): RecipeList
 }

@@ -35,10 +35,12 @@ class GraphqlConfiguration {
 
     @Bean
     fun mutation(recipeRepository: RecipeRepository,
-                 recipeListRepository: RecipeListRepository): Mutation {
+                 recipeListRepository: RecipeListRepository,
+                 tagRepository: TagRepository): Mutation {
         return Mutation(
                 recipeRepository = recipeRepository,
-                recipeListRepository = recipeListRepository
+                recipeListRepository = recipeListRepository,
+                tagRepository = tagRepository
         )
     }
 }

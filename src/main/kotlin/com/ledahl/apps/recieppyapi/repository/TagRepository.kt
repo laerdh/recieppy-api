@@ -6,6 +6,7 @@ import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -40,5 +41,15 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         } catch (exception: DataAccessException) {
             return null
         }
+    }
+
+    fun save(tag: Tag): Number {
+        val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("tag")
+                .usingGeneratedKeyColumns("id")
+        val parameters = HashMap<String, Any>()
+        parameters["text"] = tag.text
+
+        return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
 }
