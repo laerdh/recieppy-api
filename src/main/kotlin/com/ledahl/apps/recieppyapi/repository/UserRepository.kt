@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.User
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
@@ -16,23 +17,45 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getUserById(id: Long): User? {
+    fun getUserFromId(id: Long): User? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("id", id)
 
-        return namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE id = :id", parameterSource) { rs, _ ->
-            mapToUser(rs)
+        return try {
+            namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE id = :id", parameterSource) { rs, _ ->
+                mapToUser(rs)
+            }
+        } catch (exception: DataAccessException) {
+            null
         }
     }
 
-    fun getUserByToken(token: String): User? {
+    fun getUserFromToken(token: String): User? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("token", token)
 
-        return namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE token = :token", parameterSource) { rs, _ ->
-            mapToUser(rs)
+        return try {
+            namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE token = :token", parameterSource) { rs, _ ->
+                mapToUser(rs)
+            }
+        } catch (exception: DataAccessException) {
+            null
+        }
+    }
+
+    fun getUserFromPhoneNumber(phoneNumber: String): User? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("phone_number", phoneNumber)
+
+        return try {
+            namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE phone_number = :phone_number", parameterSource) { rs, _ ->
+                mapToUser(rs)
+            }
+        } catch (exception: DataAccessException) {
+            null
         }
     }
 

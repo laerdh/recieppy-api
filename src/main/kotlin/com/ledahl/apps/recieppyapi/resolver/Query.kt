@@ -22,12 +22,12 @@ class Query(@Autowired private val userRepository: UserRepository,
         return userRepository.getUsers()
     }
 
-    fun getUserById(id: Long): User? {
-        return userRepository.getUserById(id)
+    fun getUserFromId(id: Long): User? {
+        return userRepository.getUserFromId(id)
     }
 
-    fun getUserByToken(token: String): User? {
-        return userRepository.getUserByToken(token)
+    fun getUserFromToken(token: String): User? {
+        return userRepository.getUserFromToken(token)
     }
 
     fun getRecipe(id: Long): Recipe? {

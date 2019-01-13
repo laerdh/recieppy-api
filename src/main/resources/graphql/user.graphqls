@@ -6,7 +6,7 @@ type User {
 }
 
 extend type Query {
-    userById(id: ID): User
-    userByToken(token: String): User
+    userFromId(id: ID): User
+    userFromToken(token: String): User
     users: [User]!
 }

@@ -1,13 +1,13 @@
-type SmsAuthResponse {
-    user: User
+type AuthResponse {
+    name: String!
     token: String
 }
 
-input SmsAuth {
+input AuthData {
     phoneNumber: String
     uid: String
 }
 
 extend type Mutation {
-    authenticate(smsAuth: SmsAuth): SmsAuthResponse
+    authenticate(authData: AuthData): AuthResponse
 }
