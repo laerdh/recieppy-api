@@ -1,0 +1,3 @@
+ALTER TABLE "user"
+ADD COLUMN phone_number VARCHAR(11),
+ADD COLUMN token VARCHAR;

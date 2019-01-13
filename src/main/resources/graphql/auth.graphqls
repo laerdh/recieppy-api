@@ -1,0 +1,13 @@
+type SmsAuthResponse {
+    user: User
+    token: String
+}
+
+input SmsAuth {
+    phoneNumber: String
+    uid: String
+}
+
+extend type Mutation {
+    authenticate(smsAuth: SmsAuth): SmsAuthResponse
+}

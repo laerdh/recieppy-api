@@ -1,6 +1,9 @@
 package com.ledahl.apps.recieppyapi.resolver
 
 import com.coxautodev.graphql.tools.GraphQLMutationResolver
+import com.ledahl.apps.recieppyapi.auth.model.SmsAuth
+import com.ledahl.apps.recieppyapi.auth.model.SmsAuthResponse
+import com.ledahl.apps.recieppyapi.auth.Unsecured
 import com.ledahl.apps.recieppyapi.model.*
 import com.ledahl.apps.recieppyapi.model.input.RecipeInput
 import com.ledahl.apps.recieppyapi.model.input.RecipeListInput
@@ -8,12 +11,22 @@ import com.ledahl.apps.recieppyapi.model.input.TagInput
 import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
 import com.ledahl.apps.recieppyapi.repository.RecipeRepository
 import com.ledahl.apps.recieppyapi.repository.TagRepository
+import com.ledahl.apps.recieppyapi.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.time.LocalDate
 
-class Mutation(@Autowired private val recipeRepository: RecipeRepository,
+@Component
+class Mutation(@Autowired private val userRepository: UserRepository,
+               @Autowired private val recipeRepository: RecipeRepository,
                @Autowired private val recipeListRepository: RecipeListRepository,
                @Autowired private val tagRepository: TagRepository) : GraphQLMutationResolver {
+    @Unsecured
+    fun authenticate(smsAuth: SmsAuth): SmsAuthResponse {
+        val existingUser = userRepository.getUserById(1)
+        return SmsAuthResponse(user = existingUser, token = "uf89aJAAZZjg89ajg")
+    }
+
     fun newRecipeList(recipeList: RecipeListInput): RecipeList? {
         val newRecipeList = RecipeList(
                 id = 0,

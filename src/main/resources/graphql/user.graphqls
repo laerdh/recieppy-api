@@ -1,0 +1,12 @@
+type User {
+    id: ID!
+    name: String!
+    phoneNumber: String
+    token: String
+}
+
+extend type Query {
+    userById(id: ID): User
+    userByToken(token: String): User
+    users: [User]!
+}
