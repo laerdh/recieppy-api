@@ -1,5 +1,5 @@
 type AuthResponse {
-    name: String!
+    user: User
     token: String
 }
 

@@ -6,6 +6,7 @@ import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 
@@ -54,6 +55,32 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE phone_number = :phone_number", parameterSource) { rs, _ ->
                 mapToUser(rs)
             }
+        } catch (exception: DataAccessException) {
+            null
+        }
+    }
+
+    fun save(user: User): Number {
+        val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("\"user\"")
+                .usingGeneratedKeyColumns("id")
+
+        val parameters = HashMap<String, Any?>()
+        parameters["name"] = user.name
+        parameters["phone_number"] = user.phoneNumber
+        parameters["token"] = user.token
+
+        return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
+    }
+
+    fun saveTokenForUser(user: User): Int? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("id", user.id)
+        parameterSource.addValue("token", user.token)
+
+        return try {
+            namedTemplate.update("UPDATE \"user\" SET token = :token WHERE id = :id", parameterSource)
         } catch (exception: DataAccessException) {
             null
         }

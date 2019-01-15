@@ -19,7 +19,5 @@ class WebSecurityConfiguration(): WebSecurityConfigurerAdapter() {
                 ?.authorizeRequests()
                 ?.antMatchers("/graphql")?.permitAll()
                 ?.anyRequest()?.authenticated()
-                ?.and()
-                ?.formLogin()
     }
 }

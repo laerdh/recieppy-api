@@ -1,7 +1,6 @@
 package com.ledahl.apps.recieppyapi.auth
 
 import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
-import com.ledahl.apps.recieppyapi.repository.UserRepository
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.annotation.Before
 import org.aspectj.lang.annotation.Pointcut
@@ -17,7 +16,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 @Aspect
 @Component
 @Order(1)
-class SecurityQraphQLAspect(@Autowired private val userRepository: UserRepository) {
+class SecurityQraphQLAspect(@Autowired private val tokenService: TokenService) {
 
     /**
      * All graphQLResolver methods can be called only by authenticated user.
@@ -30,9 +29,7 @@ class SecurityQraphQLAspect(@Autowired private val userRepository: UserRepositor
         if (token.isNullOrEmpty()) {
             throw NotAuthenticatedException("Invalid or missing authorization token")
         }
-
-        // TODO: Validate JWT token
-        userRepository.getUserFromToken(token) ?: throw NotAuthenticatedException()
+        tokenService.verifyToken(token)
     }
 
     /**
