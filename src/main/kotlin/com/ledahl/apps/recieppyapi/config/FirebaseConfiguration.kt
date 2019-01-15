@@ -14,7 +14,8 @@ class FirebaseConfiguration {
     @Bean
     @Throws(IOException::class)
     fun firebaseAuth(): FirebaseAuth {
-        val serviceAccount = FileInputStream("recieppy-firebase-adminsdk-h7dpd-c18a54383d.json")
+        val classLoader = Thread.currentThread().contextClassLoader
+        val serviceAccount = classLoader.getResourceAsStream("config/recieppy-firebase-adminsdk-h7dpd-c18a54383d.json")
         val options = FirebaseOptions.Builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                 .setDatabaseUrl("https://recieppy.firebaseio.com")
