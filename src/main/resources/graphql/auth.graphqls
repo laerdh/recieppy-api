@@ -1,0 +1,14 @@
+type AuthResponse {
+    user: User!
+    token: String!
+    firstLogin: Boolean!
+}
+
+input AuthData {
+    phoneNumber: String
+    uid: String
+}
+
+extend type Mutation {
+    authenticate(authData: AuthData): AuthResponse
+}

@@ -1,0 +1,5 @@
+ALTER TABLE user_account DROP COLUMN name;
+ALTER TABLE user_account ADD COLUMN first_name VARCHAR(128) NOT NULL DEFAULT '';
+ALTER TABLE user_account ADD COLUMN last_name VARCHAR(128) NOT NULL DEFAULT '';
+ALTER TABLE user_account ADD COLUMN email VARCHAR(256);
+
