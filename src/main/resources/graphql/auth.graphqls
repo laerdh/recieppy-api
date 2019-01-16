@@ -1,6 +1,7 @@
 type AuthResponse {
-    user: User
-    token: String
+    user: User!
+    token: String!
+    firstLogin: Boolean!
 }
 
 input AuthData {

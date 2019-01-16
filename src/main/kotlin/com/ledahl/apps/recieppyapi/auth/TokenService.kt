@@ -1,7 +1,6 @@
 package com.ledahl.apps.recieppyapi.auth
 
 import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
-import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
@@ -26,15 +25,15 @@ class TokenService(@Autowired private val userRepository: UserRepository) {
         SecretKeySpec(decodedKey, 0, decodedKey.size, "HmacSHA512")
     }
 
-    fun generateToken(user: User): String {
+    fun generateToken(phoneNumber: String): String {
         val token = Jwts.builder()
-                .setSubject(user.phoneNumber)
+                .setSubject(phoneNumber)
                 .setIssuer(issuer)
                 .setIssuedAt(Date())
                 .signWith(signingKey, SignatureAlgorithm.HS512)
                 .compact()
 
-        logger.info("Generated token for user: {}", user.phoneNumber)
+        logger.info("Generated token for user: {}", phoneNumber)
         return token
     }
 

@@ -4,7 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.ledahl.apps.recieppyapi.auth.model.AuthData
 import com.ledahl.apps.recieppyapi.auth.model.AuthResponse
 import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
-import com.ledahl.apps.recieppyapi.exception.UserNotFoundException
+import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,15 +29,38 @@ class AuthService(@Autowired private val firebaseAuth: FirebaseAuth,
                 throw NotAuthenticatedException("Bad credentials")
             }
 
-            val existingUser = userRepository.getUserFromPhoneNumber(firebaseUser.phoneNumber) ?: throw UserNotFoundException()
-            val generatedToken = tokenService.generateToken(existingUser)
+            val existingUser = userRepository.getUserFromPhoneNumber(authData.phoneNumber)
+            val generatedToken = tokenService.generateToken(authData.phoneNumber)
+
+            if (existingUser == null) {
+                val newAuthenticatedUser = createUser(phoneNumber = authData.phoneNumber, token = generatedToken)
+                return AuthResponse(
+                        user = newAuthenticatedUser,
+                        token = generatedToken,
+                        firstLogin = true
+                )
+            }
+
             val authenticatedUser = existingUser.copy(token = generatedToken)
             userRepository.saveTokenForUser(authenticatedUser)
-
-            return AuthResponse(user = authenticatedUser, token = generatedToken)
+            return AuthResponse(
+                    user = authenticatedUser,
+                    token = generatedToken
+            )
         } catch (exception: Exception) {
             logger.info("Failed to authenticate user with phone number: {} and uid: {}", authData.phoneNumber, authData.uid)
-            throw NotAuthenticatedException("Bad credentials")
+            throw NotAuthenticatedException("Authentication failed")
         }
+    }
+
+    private fun createUser(phoneNumber: String, token: String): User {
+        val newUser = User(
+                id = 0,
+                name = "",
+                phoneNumber = phoneNumber,
+                token = token
+        )
+        val newUserId = userRepository.save(newUser)
+        return newUser.copy(id = newUserId.toLong())
     }
 }
