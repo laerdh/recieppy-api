@@ -5,24 +5,32 @@ import com.ledahl.apps.recieppyapi.auth.AuthService
 import com.ledahl.apps.recieppyapi.auth.Unsecured
 import com.ledahl.apps.recieppyapi.auth.model.AuthData
 import com.ledahl.apps.recieppyapi.auth.model.AuthResponse
+import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
+import com.ledahl.apps.recieppyapi.exception.UserNotFoundException
 import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.RecipeList
 import com.ledahl.apps.recieppyapi.model.Tag
+import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.RecipeInput
 import com.ledahl.apps.recieppyapi.model.input.RecipeListInput
 import com.ledahl.apps.recieppyapi.model.input.TagInput
+import com.ledahl.apps.recieppyapi.model.input.UserInput
 import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
 import com.ledahl.apps.recieppyapi.repository.RecipeRepository
 import com.ledahl.apps.recieppyapi.repository.TagRepository
+import com.ledahl.apps.recieppyapi.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
 import java.time.LocalDate
 
 @Component
 class Mutation(@Autowired private val authService: AuthService,
                @Autowired private val recipeRepository: RecipeRepository,
                @Autowired private val recipeListRepository: RecipeListRepository,
-               @Autowired private val tagRepository: TagRepository) : GraphQLMutationResolver {
+               @Autowired private val tagRepository: TagRepository,
+               @Autowired private val userRepository: UserRepository) : GraphQLMutationResolver {
     @Unsecured
     fun authenticate(authData: AuthData): AuthResponse {
         return authService.authenticate(authData)
@@ -80,5 +88,14 @@ class Mutation(@Autowired private val authService: AuthService,
             return newTag.copy(id = newTagId.toLong())
         }
         return null
+    }
+
+    fun updateUser(user: UserInput): User {
+        val requestAttributes = RequestContextHolder.currentRequestAttributes() as? ServletRequestAttributes
+        val token = requestAttributes?.request?.getHeader("Authorization") ?: throw NotAuthorizedException()
+        val existingUser = userRepository.getUserFromToken(token) ?: throw UserNotFoundException()
+        val userToUpdate = existingUser.copy(firstName = user.firstName, lastName = user.lastName, email = user.email)
+        userRepository.update(userToUpdate)
+        return userToUpdate
     }
 }

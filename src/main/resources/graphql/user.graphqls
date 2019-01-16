@@ -12,3 +12,13 @@ extend type Query {
     user(id: ID): User
     users: [User]!
 }
+
+input UserInput {
+    firstName: String!
+    lastName: String!
+    email: String
+}
+
+extend type Mutation {
+    updateUser(input: UserInput): User
+}
