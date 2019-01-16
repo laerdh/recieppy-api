@@ -22,7 +22,7 @@ class Query(@Autowired private val userRepository: UserRepository,
         return userRepository.getUsers()
     }
 
-    fun getUserFromId(id: Long): User? {
+    fun getUser(id: Long): User? {
         return userRepository.getUserFromId(id)
     }
 
@@ -40,6 +40,10 @@ class Query(@Autowired private val userRepository: UserRepository,
 
     fun getRecipeLists(): List<RecipeList> {
         return recipeListRepository.getRecipeLists()
+    }
+
+    fun getRecipeLists(user: User): List<RecipeList> {
+        return recipeListRepository.getRecipeListsForUser(user.id)
     }
 
     fun getTags(): List<Tag> {

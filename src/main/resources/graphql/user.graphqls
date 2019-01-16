@@ -3,9 +3,10 @@ type User {
     name: String!
     phoneNumber: String
     token: String
+    recipeLists: [RecipeList]!
 }
 
 extend type Query {
-    userFromId(id: ID): User
+    user(id: ID): User
     users: [User]!
 }

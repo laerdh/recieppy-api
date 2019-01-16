@@ -8,17 +8,14 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
+import java.sql.ResultSet
 import java.util.*
 
 @Repository
 class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getRecipeLists(): List<RecipeList> {
         return jdbcTemplate.query("SELECT * FROM recipe_list") { rs, _ ->
-            RecipeList(
-                    id = rs.getLong("id"),
-                    name = rs.getString("name"),
-                    created = rs.getDate("created").toLocalDate()
-            )
+            mapToRecipeList(rs)
         }
     }
 
@@ -29,14 +26,23 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.queryForObject("SELECT * FROM recipe_list WHERE id = :id", parameterSource) { rs, _ ->
-                RecipeList(
-                        id = rs.getLong("id"),
-                        name = rs.getString("name"),
-                        created = rs.getDate("created").toLocalDate()
-                )
+                mapToRecipeList(rs)
             }
         } catch (exception: DataAccessException) {
             null
+        }
+    }
+
+    fun getRecipeListsForUser(id: Long): List<RecipeList> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("id", id)
+
+        return namedTemplate.query("SELECT * " +
+                "FROM recipe_list " +
+                "INNER JOIN user_recipe_list url on recipe_list.id = url.recipe_list " +
+                "WHERE url.user_id = :id", parameterSource) { rs, _ ->
+            mapToRecipeList(rs)
         }
     }
 
@@ -62,5 +68,13 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameters["recipe_list"] = recipeListId
 
         simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
+    }
+
+    fun mapToRecipeList(rs: ResultSet): RecipeList {
+        return RecipeList(
+                id = rs.getLong("id"),
+                name = rs.getString("name"),
+                created = rs.getDate("created").toLocalDate()
+        )
     }
 }
