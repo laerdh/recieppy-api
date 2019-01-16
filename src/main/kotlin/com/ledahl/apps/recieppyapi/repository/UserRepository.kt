@@ -13,7 +13,7 @@ import java.sql.ResultSet
 @Repository
 class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getUsers(): List<User> {
-        return jdbcTemplate.query("SELECT * FROM \"user\"") { rs,_ ->
+        return jdbcTemplate.query("SELECT * FROM user_account") { rs,_ ->
             mapToUser(rs)
         }
     }
@@ -24,7 +24,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("id", id)
 
         return try {
-            namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE id = :id", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("SELECT * FROM user_account WHERE id = :id", parameterSource) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -38,7 +38,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("token", token)
 
         return try {
-            namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE token = :token", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("SELECT * FROM user_account WHERE token = :token", parameterSource) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -52,7 +52,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("phone_number", phoneNumber)
 
         return try {
-            namedTemplate.queryForObject("SELECT * FROM \"user\" WHERE phone_number = :phone_number", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("SELECT * FROM user_account WHERE phone_number = :phone_number", parameterSource) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -62,7 +62,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
     fun save(user: User): Number {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
-                .withTableName("\"user\"")
+                .withTableName("user_account")
                 .usingGeneratedKeyColumns("id")
 
         val parameters = HashMap<String, Any?>()
@@ -80,7 +80,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("token", user.token)
 
         return try {
-            namedTemplate.update("UPDATE \"user\" SET token = :token WHERE id = :id", parameterSource)
+            namedTemplate.update("UPDATE user_account SET token = :token WHERE id = :id", parameterSource)
         } catch (exception: DataAccessException) {
             null
         }
