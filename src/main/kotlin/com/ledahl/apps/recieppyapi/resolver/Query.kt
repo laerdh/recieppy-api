@@ -26,10 +26,6 @@ class Query(@Autowired private val userRepository: UserRepository,
         return userRepository.getUserFromId(id)
     }
 
-    fun getUserFromToken(token: String): User? {
-        return userRepository.getUserFromToken(token)
-    }
-
     fun getRecipe(id: Long): Recipe? {
         return recipeRepository.getRecipe(id)
     }

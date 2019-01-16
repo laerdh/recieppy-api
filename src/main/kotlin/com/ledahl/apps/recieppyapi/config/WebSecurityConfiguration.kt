@@ -8,7 +8,7 @@ import org.springframework.security.config.http.SessionCreationPolicy
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-class WebSecurityConfiguration(): WebSecurityConfigurerAdapter() {
+class WebSecurityConfiguration: WebSecurityConfigurerAdapter() {
 
     @Throws(Exception::class)
     override fun configure(http: HttpSecurity?) {
