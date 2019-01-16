@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.ledahl.apps.recieppyapi.auth.model.AuthData
 import com.ledahl.apps.recieppyapi.auth.model.AuthResponse
 import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
+import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import org.slf4j.LoggerFactory
@@ -24,9 +25,10 @@ class AuthService(@Autowired private val firebaseAuth: FirebaseAuth,
 
         try {
             val firebaseUser = firebaseAuth.getUser(authData.uid)
-            if (firebaseUser.uid == null || firebaseUser.phoneNumber == null
-                    && authData.phoneNumber != firebaseUser.phoneNumber) {
-                throw NotAuthenticatedException("Bad credentials")
+            if (firebaseUser.uid == null
+                    || firebaseUser.phoneNumber == null
+                    || authData.phoneNumber != firebaseUser.phoneNumber) {
+                throw NotAuthenticatedException("Phone number not found")
             }
 
             val existingUser = userRepository.getUserFromPhoneNumber(authData.phoneNumber)
@@ -51,6 +53,11 @@ class AuthService(@Autowired private val firebaseAuth: FirebaseAuth,
             logger.info("Failed to authenticate user with phone number: {} and uid: {}", authData.phoneNumber, authData.uid)
             throw NotAuthenticatedException("Authentication failed")
         }
+    }
+
+    @Throws(NotAuthorizedException::class)
+    fun getRequestToken(): String {
+        return tokenService.getRequestToken()
     }
 
     private fun createUser(phoneNumber: String, token: String): User {

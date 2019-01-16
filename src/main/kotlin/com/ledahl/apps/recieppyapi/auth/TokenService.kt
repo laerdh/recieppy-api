@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.auth
 
 import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
+import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
@@ -9,6 +10,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
 
@@ -51,5 +54,11 @@ class TokenService(@Autowired private val userRepository: UserRepository) {
         } catch (exception: JwtException) {
             throw NotAuthenticatedException("Token invalid")
         }
+    }
+
+    @Throws(NotAuthorizedException::class)
+    fun getRequestToken(): String {
+        val requestAttributes = RequestContextHolder.currentRequestAttributes() as? ServletRequestAttributes
+        return requestAttributes?.request?.getHeader("Authorization") ?: throw NotAuthorizedException()
     }
 }
