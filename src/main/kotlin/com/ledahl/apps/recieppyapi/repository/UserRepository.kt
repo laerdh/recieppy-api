@@ -66,7 +66,8 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 .usingGeneratedKeyColumns("id")
 
         val parameters = HashMap<String, Any?>()
-        parameters["name"] = user.name
+        parameters["first_name"] = user.firstName
+        parameters["last_name"] = user.lastName
         parameters["phone_number"] = user.phoneNumber
         parameters["token"] = user.token
 
@@ -89,7 +90,9 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     private fun mapToUser(rs: ResultSet): User? {
         return User(
                 id = rs.getLong("id"),
-                name = rs.getString("name"),
+                firstName = rs.getString("first_name"),
+                lastName = rs.getString("last_name"),
+                email = rs.getString("email"),
                 firebaseId = rs.getString("firebase_id"),
                 phoneNumber = rs.getString("phone_number"),
                 token = rs.getString("token")

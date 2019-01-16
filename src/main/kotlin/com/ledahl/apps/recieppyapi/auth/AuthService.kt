@@ -56,7 +56,8 @@ class AuthService(@Autowired private val firebaseAuth: FirebaseAuth,
     private fun createUser(phoneNumber: String, token: String): User {
         val newUser = User(
                 id = 0,
-                name = "",
+                firstName = "",
+                lastName = "",
                 phoneNumber = phoneNumber,
                 token = token
         )
