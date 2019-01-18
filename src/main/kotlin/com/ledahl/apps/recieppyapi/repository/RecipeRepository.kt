@@ -8,19 +8,13 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
+import java.sql.ResultSet
 
 @Repository
 class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getRecipes(): List<Recipe> {
         return jdbcTemplate.query("SELECT * FROM recipe") { rs, _ ->
-            Recipe(
-                    id = rs.getLong("id"),
-                    title = rs.getString("title"),
-                    url = rs.getString("url"),
-                    imageUrl = rs.getString("image_url"),
-                    site = rs.getString("site"),
-                    recipeListId = rs.getLong("recipe_list_id")
-            )
+            mapToRecipe(rs)
         }
     }
 
@@ -31,14 +25,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.queryForObject("SELECT * FROM recipe WHERE id = :id", parameterSource) { rs, _ ->
-                Recipe(
-                        id = rs.getLong("id"),
-                        title = rs.getString("title"),
-                        url = rs.getString("url"),
-                        imageUrl = rs.getString("image_url"),
-                        site = rs.getString("site"),
-                        recipeListId = rs.getLong("recipe_list_id")
-                )
+                mapToRecipe(rs)
             }
         } catch (exception: DataAccessException) {
             null
@@ -56,14 +43,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                         "INNER JOIN recipe r on rl.id = r.recipe_list_id " +
                         "WHERE rl.id = :id",
                 parameterSource) { rs, _ ->
-            Recipe(
-                    id = rs.getLong("id"),
-                    title = rs.getString("title"),
-                    url = rs.getString("url"),
-                    imageUrl = rs.getString("image_url"),
-                    site = rs.getString("site"),
-                    recipeListId = rs.getLong("recipe_list_id")
-            )
+            mapToRecipe(rs)
         }
     }
 
@@ -93,5 +73,16 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
             simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
         }
+    }
+
+    private fun mapToRecipe(rs: ResultSet): Recipe {
+        return Recipe(
+            id = rs.getLong("id"),
+            title = rs.getString("title"),
+            url = rs.getString("url"),
+            imageUrl = rs.getString("image_url"),
+            site = rs.getString("site"),
+            recipeListId = rs.getLong("recipe_list_id")
+        )
     }
 }

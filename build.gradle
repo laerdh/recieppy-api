@@ -25,7 +25,7 @@ apply plugin: 'io.spring.dependency-management'
 apply plugin: 'org.flywaydb.flyway'
 
 group = 'com.ledahl.apps'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.2-SNAPSHOT'
 sourceCompatibility = 1.8
 compileKotlin {
 	kotlinOptions {
@@ -48,11 +48,20 @@ dependencies {
 	implementation('org.springframework.boot:spring-boot-starter')
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	compile('org.flywaydb:flyway-core:5.2.4')
-	compile group: 'org.postgresql', name: 'postgresql', version: '42.2.5'
-	compile group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc', version: '2.0.4.RELEASE'
-	compile group: 'com.graphql-java', name: 'graphql-spring-boot-starter', version: '5.0.2'
-	compile group: 'com.graphql-java', name: 'graphql-java-tools', version: '5.2.4'
+	implementation('org.flywaydb:flyway-core:5.2.4')
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation('org.springframework.boot:spring-boot-starter-aop')
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc', version: '2.0.4.RELEASE'
+	implementation group: 'org.postgresql', name: 'postgresql', version: '42.2.5'
+	implementation group: 'com.graphql-java', name: 'graphql-spring-boot-starter', version: '5.0.2'
+	implementation group: 'com.graphql-java', name: 'graphql-java-tools', version: '5.2.4'
+	implementation 'com.google.firebase:firebase-admin:6.7.0'
+	implementation 'io.jsonwebtoken:jjwt-api:0.10.5'
+	runtime 'io.jsonwebtoken:jjwt-impl:0.10.5',
+			// Uncomment the next line if you want to use RSASSA-PSS (PS256, PS384, PS512) algorithms:
+			//'org.bouncycastle:bcprov-jdk15on:1.60',
+			'io.jsonwebtoken:jjwt-jackson:0.10.5'
+
 	testImplementation('org.springframework.boot:spring-boot-starter-test')
 }
 
