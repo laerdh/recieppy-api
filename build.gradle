@@ -65,12 +65,10 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test')
 }
 
-ext.flywayProps = new Properties()
-flywayProps.load(new FileInputStream(this.projectDir.absolutePath + "/flyway.properties"))
-
+ENV = System.getenv()
 flyway {
-	url = flywayProps["url"]
-	user = flywayProps["user"]
-	password = flywayProps["password"]
-	schemas = [flywayProps["schemas"]]
+	url = ENV["DATABASE_URL"]
+	user = ENV["DATABASE_USER"]
+	password = ENV["DATABASE_PASSWORD"]
+	schemas = [ENV["DATABASE_SCHEMA"]]
 }
