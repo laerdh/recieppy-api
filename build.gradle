@@ -65,10 +65,9 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test')
 }
 
-ENV = System.getenv()
 flyway {
-	url = ENV["DATABASE_URL"]
-	user = ENV["DATABASE_USER"]
-	password = ENV["DATABASE_PASSWORD"]
-	schemas = [ENV["DATABASE_SCHEMA"]]
+	url = System.getenv("DATABASE_URL")
+	user = System.getenv("DATABASE_USER")
+	password = System.getenv("DATABASE_PASSWORD")
+	schemas = [System.getenv("DATABASE_SCHEMA")]
 }
