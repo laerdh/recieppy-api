@@ -41,7 +41,7 @@ jobs:
       - run:
           name: Set version environment variables
           command: |
-            echo 'export APP_VERSION=$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print a[2] }')' >> $BASH_ENV
+            echo export APP_VERSION=$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print a[2] }') >> $BASH_ENV
             echo 'export TAG=${APP_VERSION}.${CIRCLE_BUILD_NUM}' >> $BASH_ENV
             echo 'export IMAGE_NAME=recieppy-api-${APP_VERSION}' >> $BASH_ENV
 
