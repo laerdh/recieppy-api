@@ -38,6 +38,9 @@ jobs:
             - ~/.gradle
           key: v1-dependencies-{{ checksum "build.gradle" }}
 
+      # run tests!
+      - run: gradle bootJar
+
       - run:
           name: Set version environment variables
           command: |
@@ -47,14 +50,9 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
 
-      - run: gradle bootJar
-
       - run:
           name: Build and push Docker image
           command: |
-            docker build -t ledahl-apps/$IMAGE_NAME:$TAG .
+            docker build -t laerdh/$IMAGE_NAME:$TAG .
             echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
-            docker push ledahl-apps/$IMAGE_NAME:$TAG
-
-      # run tests!
-      - run: gradle test
+            docker push laerdh/$IMAGE_NAME:$TAG
