@@ -66,4 +66,4 @@ jobs:
           name: Deploy over SSH
           command: |
             echo 'ledahl.com,195.201.97.142 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIW3zreUo+QCknb2DZKxYGapr7vx78/KbcsQPLyHgKvZk2KgCXpRfRM1kS+XuKivCpdUK5NVAWo0geleYXMtMTw=' >> ~/.ssh/known_hosts
-            ssh $SSH_USER@$SSH_HOST "/bin/bash ./dev/api/recieppy-api/deply_app.sh"
+            ssh $SSH_USER@$SSH_HOST "/bin/bash ./dev/api/recieppy-api/deploy_app.sh"
