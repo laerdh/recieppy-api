@@ -1,4 +1,5 @@
 # recieppy-api
+[![CircleCI](https://circleci.com/gh/laerdh/recieppy-api/tree/master.svg?style=svg)](https://circleci.com/gh/laerdh/recieppy-api/tree/master)
 
 GraphQL API for the Recieppy mobile apps.
 
