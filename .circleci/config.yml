@@ -24,6 +24,13 @@ jobs:
     steps:
       - checkout
 
+      - run:
+          name: Create Firebase Service Account file
+          command: |
+            mkdir src/main/resources/config
+            touch src/main/resources/config/$FIREBASE_ACCOUNT_FILE
+            echo $FIREBASE_SERVICE_ACCOUNT >> src/main/resources/config/$FIREBASE_ACCOUNT_FILE
+
       # Download and cache dependencies
       - restore_cache:
           keys:
@@ -52,7 +59,7 @@ jobs:
           docker_layer_caching: true
 
       - run:
-          name: Build and push Docker image
+          name: Build and push Docker image to registry
           command: |
             docker build -t laerdh/$IMAGE_NAME:$TAG .
             echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
