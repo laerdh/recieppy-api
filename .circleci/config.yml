@@ -38,6 +38,7 @@ jobs:
             - ~/.gradle
           key: v1-dependencies-{{ checksum "build.gradle" }}
 
+      - run: gradle clean
       # run tests!
       - run: gradle bootJar
 
@@ -56,3 +57,12 @@ jobs:
             docker build -t laerdh/$IMAGE_NAME:$TAG .
             echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
             docker push laerdh/$IMAGE_NAME:$TAG
+
+      - add_ssh_keys:
+          fingerprints:
+            - "70:1c:d5:9f:60:78:b7:83:9a:0a:68:65:a7:a5:bb:a5"
+
+      - run:
+          name: Deploy over SSH
+          command: |
+            ssh $SSH_USER@$SSH_HOST "/bin/bash ./dev/api/recieppy-api/deply_app.sh"
