@@ -10,6 +10,5 @@ out/
 
 # Configuration Properties
 src/main/resources/config/*
-Dockerfile
 docker-compose.yml
 flyway.properties
