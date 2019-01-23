@@ -18,20 +18,6 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getUserFromId(id: Long): User? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
-
-        return try {
-            namedTemplate.queryForObject("SELECT * FROM user_account WHERE id = :id", parameterSource) { rs, _ ->
-                mapToUser(rs)
-            }
-        } catch (exception: DataAccessException) {
-            null
-        }
-    }
-
     fun getUserFromToken(token: String): User? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()

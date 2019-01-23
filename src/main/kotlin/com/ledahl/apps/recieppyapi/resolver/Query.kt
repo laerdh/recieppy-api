@@ -1,52 +1,54 @@
 package com.ledahl.apps.recieppyapi.resolver
 
 import com.coxautodev.graphql.tools.GraphQLQueryResolver
+import com.ledahl.apps.recieppyapi.auth.context.AuthContext
 import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.RecipeList
 import com.ledahl.apps.recieppyapi.model.Tag
 import com.ledahl.apps.recieppyapi.model.User
-import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
-import com.ledahl.apps.recieppyapi.repository.RecipeRepository
-import com.ledahl.apps.recieppyapi.repository.TagRepository
-import com.ledahl.apps.recieppyapi.repository.UserRepository
+import com.ledahl.apps.recieppyapi.service.RecipeListService
+import com.ledahl.apps.recieppyapi.service.RecipeService
+import com.ledahl.apps.recieppyapi.service.UserService
+import graphql.schema.DataFetchingEnvironment
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class Query(@Autowired private val userRepository: UserRepository,
-            @Autowired private val recipeRepository: RecipeRepository,
-            @Autowired private val recipeListRepository: RecipeListRepository,
-            @Autowired private val tagRepository: TagRepository) : GraphQLQueryResolver {
+class Query(@Autowired private val userService: UserService,
+            @Autowired private val recipeService: RecipeService,
+            @Autowired private val recipeListService: RecipeListService) : GraphQLQueryResolver {
 
-    fun getUsers(): List<User> {
-        return userRepository.getUsers()
+    fun getUsers(env: DataFetchingEnvironment): List<User> {
+        val user = env.getContext<AuthContext>().user
+        return userService.getUsers(user)
     }
 
-    fun getUser(id: Long): User? {
-        return userRepository.getUserFromId(id)
+    fun getUser(env: DataFetchingEnvironment): User? {
+        return env.getContext<AuthContext>().user
     }
 
-    fun getRecipe(id: Long): Recipe? {
-        return recipeRepository.getRecipe(id)
+    fun getRecipe(id: Long, env: DataFetchingEnvironment): Recipe? {
+        val user = env.getContext<AuthContext>().user
+        return recipeService.getRecipe(id = id, user = user)
     }
 
-    fun getRecipes(): List<Recipe> {
-        return recipeRepository.getRecipes()
+    fun getRecipes(env: DataFetchingEnvironment): List<Recipe> {
+        val user = env.getContext<AuthContext>().user
+        return recipeService.getRecipesForUser(user)
     }
 
-    fun getRecipeList(id: Long): RecipeList? {
-        return recipeListRepository.getRecipeList(id)
+    fun getRecipeList(id: Long, env: DataFetchingEnvironment): RecipeList? {
+        val user = env.getContext<AuthContext>().user
+        return recipeListService.getRecipeList(id = id, user = user)
     }
 
-    fun getRecipeLists(): List<RecipeList> {
-        return recipeListRepository.getRecipeLists()
+    fun getRecipeLists(env: DataFetchingEnvironment): List<RecipeList> {
+        val user = env.getContext<AuthContext>().user
+        return recipeListService.getRecipeListsForUser(user)
     }
 
-    fun getRecipeLists(user: User): List<RecipeList> {
-        return recipeListRepository.getRecipeListsForUser(user.id)
-    }
-
-    fun getTags(): List<Tag> {
-        return tagRepository.getTags()
+    fun getTags(env: DataFetchingEnvironment): List<Tag> {
+        val user = env.getContext<AuthContext>().user
+        return recipeService.getTags(user)
     }
 }

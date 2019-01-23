@@ -12,8 +12,31 @@ import java.sql.ResultSet
 
 @Repository
 class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
-    fun getRecipes(): List<Recipe> {
-        return jdbcTemplate.query("SELECT * FROM recipe") { rs, _ ->
+    fun getRecipesForUser(userId: Long): List<Recipe> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("id", userId)
+
+        return namedTemplate.query("SELECT * " +
+                "FROM recipe " +
+                "INNER JOIN recipe_list rl on recipe.recipe_list_id = rl.id " +
+                "INNER JOIN user_recipe_list url on rl.id = url.recipe_list " +
+                "WHERE user_id = :id", parameterSource) { rs, _ ->
+            mapToRecipe(rs)
+        }
+    }
+
+    fun getRecipesForRecipeList(recipeListId: Long): List<Recipe> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("id", recipeListId)
+
+        return namedTemplate.query(
+                "SELECT r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id " +
+                        "FROM recipe_list rl " +
+                        "INNER JOIN recipe r on rl.id = r.recipe_list_id " +
+                        "WHERE rl.id = :id",
+                parameterSource) { rs, _ ->
             mapToRecipe(rs)
         }
     }
@@ -29,21 +52,6 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             }
         } catch (exception: DataAccessException) {
             null
-        }
-    }
-
-    fun getRecipesForRecipeList(id: Long): List<Recipe> {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
-
-        return namedTemplate.query(
-                "SELECT r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id " +
-                        "FROM recipe_list rl " +
-                        "INNER JOIN recipe r on rl.id = r.recipe_list_id " +
-                        "WHERE rl.id = :id",
-                parameterSource) { rs, _ ->
-            mapToRecipe(rs)
         }
     }
 

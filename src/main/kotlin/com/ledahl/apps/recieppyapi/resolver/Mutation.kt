@@ -1,12 +1,11 @@
 package com.ledahl.apps.recieppyapi.resolver
 
 import com.coxautodev.graphql.tools.GraphQLMutationResolver
-import com.ledahl.apps.recieppyapi.auth.AuthService
 import com.ledahl.apps.recieppyapi.auth.Unsecured
+import com.ledahl.apps.recieppyapi.service.AuthService
 import com.ledahl.apps.recieppyapi.auth.model.AuthData
 import com.ledahl.apps.recieppyapi.auth.model.AuthResponse
-import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
-import com.ledahl.apps.recieppyapi.exception.UserNotFoundException
+import com.ledahl.apps.recieppyapi.auth.context.AuthContext
 import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.RecipeList
 import com.ledahl.apps.recieppyapi.model.Tag
@@ -15,87 +14,41 @@ import com.ledahl.apps.recieppyapi.model.input.RecipeInput
 import com.ledahl.apps.recieppyapi.model.input.RecipeListInput
 import com.ledahl.apps.recieppyapi.model.input.TagInput
 import com.ledahl.apps.recieppyapi.model.input.UserInput
-import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
-import com.ledahl.apps.recieppyapi.repository.RecipeRepository
-import com.ledahl.apps.recieppyapi.repository.TagRepository
-import com.ledahl.apps.recieppyapi.repository.UserRepository
+import com.ledahl.apps.recieppyapi.service.RecipeListService
+import com.ledahl.apps.recieppyapi.service.RecipeService
+import com.ledahl.apps.recieppyapi.service.UserService
+import graphql.schema.DataFetchingEnvironment
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
-import java.time.LocalDate
 
 @Component
 class Mutation(@Autowired private val authService: AuthService,
-               @Autowired private val recipeRepository: RecipeRepository,
-               @Autowired private val recipeListRepository: RecipeListRepository,
-               @Autowired private val tagRepository: TagRepository,
-               @Autowired private val userRepository: UserRepository) : GraphQLMutationResolver {
+               @Autowired private val recipeService: RecipeService,
+               @Autowired private val recipeListService: RecipeListService,
+               @Autowired private val userService: UserService) : GraphQLMutationResolver {
+
     @Unsecured
     fun authenticate(authData: AuthData): AuthResponse {
         return authService.authenticate(authData)
     }
 
-    fun newRecipeList(recipeList: RecipeListInput): RecipeList? {
-        val newRecipeList = RecipeList(
-                id = 0,
-                name = recipeList.name,
-                created = LocalDate.now()
-        )
-
-        val newRecipeListId = recipeListRepository.save(newRecipeList)
-        if (newRecipeListId != 0) {
-            recipeListRepository.saveListToUser(
-                    recipeListId = newRecipeListId.toLong(),
-                    userId = recipeList.creatorId
-            )
-            return newRecipeList.copy(id = newRecipeListId.toLong())
-        }
-        return null
+    fun newRecipeList(recipeList: RecipeListInput, env: DataFetchingEnvironment): RecipeList? {
+        val user = env.getContext<AuthContext>().user
+        return recipeListService.createRecipeList(recipeList = recipeList, user = user)
     }
 
-    fun newRecipe(recipe: RecipeInput): Recipe? {
-        val newRecipe = Recipe(
-                id = 0,
-                title = recipe.title,
-                url = recipe.url,
-                imageUrl = recipe.imageUrl,
-                site = recipe.site,
-                recipeListId = recipe.recipeListId
-        )
-
-        val newRecipeId = recipeRepository.save(newRecipe)
-        if (newRecipeId != 0) {
-            recipe.tags?.let {
-                recipeRepository.saveTagsToRecipe(
-                        recipeId = newRecipeId.toLong(),
-                        tags = it
-                )
-            }
-            return newRecipe.copy(id = newRecipeId.toLong())
-        }
-        return null
+    fun newRecipe(recipe: RecipeInput, env: DataFetchingEnvironment): Recipe? {
+        val user = env.getContext<AuthContext>().user
+        return recipeService.createRecipe(recipe = recipe, user = user)
     }
 
-    fun newTag(tag: TagInput): Tag? {
-        val newTag = Tag(
-                id = 0,
-                text = tag.text
-        )
-
-        val newTagId = tagRepository.save(newTag)
-        if (newTagId != 0) {
-            return newTag.copy(id = newTagId.toLong())
-        }
-        return null
+    fun newTag(tag: TagInput, env: DataFetchingEnvironment): Tag? {
+        val user = env.getContext<AuthContext>().user
+        return recipeService.createTag(tag = tag, user = user)
     }
 
-    fun updateUser(user: UserInput): User {
-        val requestAttributes = RequestContextHolder.currentRequestAttributes() as? ServletRequestAttributes
-        val token = requestAttributes?.request?.getHeader("Authorization") ?: throw NotAuthorizedException()
-        val existingUser = userRepository.getUserFromToken(token) ?: throw UserNotFoundException()
-        val userToUpdate = existingUser.copy(firstName = user.firstName, lastName = user.lastName, email = user.email)
-        userRepository.update(userToUpdate)
-        return userToUpdate
+    fun updateUser(user: UserInput, env: DataFetchingEnvironment): User {
+        val existingUser = env.getContext<AuthContext>().user
+        return userService.updateUser(updatedUser = user, user = existingUser)
     }
 }

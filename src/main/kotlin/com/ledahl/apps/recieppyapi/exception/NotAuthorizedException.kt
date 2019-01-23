@@ -1,5 +1,5 @@
 package com.ledahl.apps.recieppyapi.exception
 
-import org.springframework.security.access.AuthorizationServiceException
+import java.lang.RuntimeException
 
-class NotAuthorizedException(override val message: String = "Not authorized for this operation"): AuthorizationServiceException(message)
+class NotAuthorizedException(override val message: String = "User not authorized for this operation"): RuntimeException(message)

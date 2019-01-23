@@ -1,22 +1,18 @@
-package com.ledahl.apps.recieppyapi.auth
+package com.ledahl.apps.recieppyapi.service
 
 import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
-import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
-import com.ledahl.apps.recieppyapi.repository.UserRepository
+import com.ledahl.apps.recieppyapi.model.User
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
 
 @Service
-class TokenService(@Autowired private val userRepository: UserRepository) {
+class TokenService {
     private val logger = LoggerFactory.getLogger(TokenService::class.java)
 
     @Value("\${JWT_SECRET}")
@@ -41,24 +37,19 @@ class TokenService(@Autowired private val userRepository: UserRepository) {
     }
 
     @Throws(NotAuthenticatedException::class)
-    fun verifyToken(token: String) {
-        userRepository.getUserFromToken(token) ?: throw NotAuthenticatedException("Token invalid")
+    fun verifyUserToken(user: User?): User? {
         try {
             val claims = Jwts.parser()
                     .setSigningKey(signingKey)
-                    .parseClaimsJws(token)
+                    .parseClaimsJws(user?.token)
                     .body
 
             val phoneNumber = claims.subject
             logger.info("Verified token for user: {}", phoneNumber)
         } catch (exception: JwtException) {
-            throw NotAuthenticatedException("Token invalid")
+            logger.info("Expired token for user: {}", user?.phoneNumber)
+            return null
         }
-    }
-
-    @Throws(NotAuthorizedException::class)
-    fun getRequestToken(): String {
-        val requestAttributes = RequestContextHolder.currentRequestAttributes() as? ServletRequestAttributes
-        return requestAttributes?.request?.getHeader("Authorization") ?: throw NotAuthorizedException()
+        return user
     }
 }
