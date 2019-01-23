@@ -33,10 +33,8 @@ class AuthService(@Autowired private val firebaseAuth: FirebaseAuth,
 
             if (existingUser == null) {
                 val newAuthenticatedUser = userService.createUser(phoneNumber = authData.phoneNumber, token = generatedToken)
-                return AuthResponse(
-                        user = newAuthenticatedUser.copy(token = generatedToken),
-                        firstLogin = true
-                )
+                logger.info("Created user with phone number: {}", authData.phoneNumber)
+                return AuthResponse(user = newAuthenticatedUser.copy(token = generatedToken), firstLogin = true)
             }
 
             val authenticatedUser = existingUser.copy(token = generatedToken)
