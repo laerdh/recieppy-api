@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.User
+import com.ledahl.apps.recieppyapi.model.enums.UserRole
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -13,7 +14,10 @@ import java.sql.ResultSet
 @Repository
 class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getUsers(): List<User> {
-        return jdbcTemplate.query("SELECT * FROM user_account") { rs,_ ->
+        return jdbcTemplate.query("SELECT u.id, firebase_id, phone_number, token, first_name, last_name, email, r.name AS user_role " +
+                "FROM user_account u " +
+                "LEFT JOIN user_role ur on u.id = ur.user_id " +
+                "LEFT JOIN role r on ur.role_id = r.id ") { rs,_ ->
             mapToUser(rs)
         }
     }
@@ -24,7 +28,11 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("token", token)
 
         return try {
-            namedTemplate.queryForObject("SELECT * FROM user_account WHERE token = :token", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("SELECT u.id, firebase_id, phone_number, token, first_name, last_name, email, r.name AS user_role " +
+                    "FROM user_account u " +
+                    "LEFT JOIN user_role ur on u.id = ur.user_id " +
+                    "LEFT JOIN role r on ur.role_id = r.id " +
+                    "WHERE token = :token", parameterSource) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -38,7 +46,11 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("phone_number", phoneNumber)
 
         return try {
-            namedTemplate.queryForObject("SELECT * FROM user_account WHERE phone_number = :phone_number", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("SELECT u.id, firebase_id, phone_number, token, first_name, last_name, email, r.name AS user_role " +
+                    "FROM user_account u " +
+                    "LEFT JOIN user_role ur on u.id = ur.user_id " +
+                    "LEFT JOIN role r on ur.role_id = r.id " +
+                    "WHERE phone_number = :phone_number", parameterSource) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -58,6 +70,17 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameters["token"] = user.token
 
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
+    }
+
+    fun saveRoleForUser(userId: Long) {
+        val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("user_role")
+
+        val parameters = HashMap<String, Any?>()
+        parameters["user_id"] = userId
+        parameters["role_id"] = 1 // ROLE: USER
+
+        simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
     }
 
     fun update(user: User): Int? {
@@ -96,7 +119,8 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 email = rs.getString("email"),
                 firebaseId = rs.getString("firebase_id"),
                 phoneNumber = rs.getString("phone_number"),
-                token = rs.getString("token")
+                token = rs.getString("token"),
+                role = UserRole.valueOf(rs.getString("user_role"))
         )
     }
 }
