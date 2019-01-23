@@ -1,5 +1,5 @@
 package com.ledahl.apps.recieppyapi.exception
 
-import java.lang.RuntimeException
+import org.springframework.security.core.AuthenticationException
 
-class NotAuthenticatedException(override val message: String = "User not authenticated"): RuntimeException(message)
+class NotAuthenticatedException(override val message: String = "User not authenticated"): AuthenticationException(message)
