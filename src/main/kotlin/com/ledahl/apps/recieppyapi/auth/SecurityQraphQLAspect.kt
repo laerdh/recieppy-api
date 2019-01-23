@@ -4,7 +4,6 @@ import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.annotation.Before
 import org.aspectj.lang.annotation.Pointcut
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestContextHolder
@@ -16,7 +15,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 @Aspect
 @Component
 @Order(1)
-class SecurityQraphQLAspect(@Autowired private val tokenService: TokenService) {
+class SecurityQraphQLAspect() {
 
     /**
      * All graphQLResolver methods can be called only by authenticated user.
@@ -27,9 +26,8 @@ class SecurityQraphQLAspect(@Autowired private val tokenService: TokenService) {
         val requestAttributes = RequestContextHolder.currentRequestAttributes() as? ServletRequestAttributes
         val token = requestAttributes?.request?.getHeader("Authorization")
         if (token.isNullOrEmpty()) {
-            throw NotAuthenticatedException("Invalid or missing authorization token")
+            throw NotAuthenticatedException("Authorization token missing")
         }
-        tokenService.verifyToken(token)
     }
 
     /**

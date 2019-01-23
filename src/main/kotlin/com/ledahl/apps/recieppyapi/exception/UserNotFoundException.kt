@@ -1,5 +1,5 @@
 package com.ledahl.apps.recieppyapi.exception
 
-import org.springframework.security.core.AuthenticationException
+import java.lang.RuntimeException
 
-class UserNotFoundException(message: String = "User not found"): AuthenticationException(message)
+class UserNotFoundException(message: String = "User not found"): RuntimeException(message)

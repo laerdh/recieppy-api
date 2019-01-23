@@ -17,10 +17,10 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getTagsForRecipe(id: Long): List<Tag>? {
+    fun getTagsForRecipe(recipeId: Long): List<Tag> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("recipeId", id)
+        parameterSource.addValue("recipeId", recipeId)
 
         return namedTemplate.query(
                 "SELECT tag_id AS id, text " +

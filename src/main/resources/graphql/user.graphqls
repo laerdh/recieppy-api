@@ -9,7 +9,7 @@ type User {
 }
 
 extend type Query {
-    user(id: ID): User
+    user: User
     users: [User]!
 }
 

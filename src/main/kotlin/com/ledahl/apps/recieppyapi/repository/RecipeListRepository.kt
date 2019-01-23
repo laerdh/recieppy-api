@@ -13,19 +13,17 @@ import java.util.*
 
 @Repository
 class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
-    fun getRecipeLists(): List<RecipeList> {
-        return jdbcTemplate.query("SELECT * FROM recipe_list") { rs, _ ->
-            mapToRecipeList(rs)
-        }
-    }
-
-    fun getRecipeList(id: Long): RecipeList? {
+    fun getRecipeList(id: Long, userId: Long): RecipeList? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("id", id)
+        parameterSource.addValue("user_id", userId)
 
         return try {
-            namedTemplate.queryForObject("SELECT * FROM recipe_list WHERE id = :id", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("SELECT * "+
+                    "FROM recipe_list " +
+                    "INNER JOIN user_recipe_list url on recipe_list.id = url.recipe_list " +
+                    "WHERE id = :id AND url.user_id = :user_id ", parameterSource) { rs, _ ->
                 mapToRecipeList(rs)
             }
         } catch (exception: DataAccessException) {
@@ -33,10 +31,10 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getRecipeListsForUser(id: Long): List<RecipeList> {
+    fun getRecipeLists(userId: Long): List<RecipeList> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
+        parameterSource.addValue("id", userId)
 
         return namedTemplate.query("SELECT * " +
                 "FROM recipe_list " +
@@ -58,7 +56,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
 
-    fun saveListToUser(recipeListId: Long, userId: Long) {
+    fun saveRecipeList(recipeListId: Long, userId: Long) {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("user_recipe_list")
                 .usingGeneratedKeyColumns("id")

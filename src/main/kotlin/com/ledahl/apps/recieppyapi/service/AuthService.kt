@@ -1,12 +1,9 @@
-package com.ledahl.apps.recieppyapi.auth
+package com.ledahl.apps.recieppyapi.service
 
 import com.google.firebase.auth.FirebaseAuth
 import com.ledahl.apps.recieppyapi.auth.model.AuthData
 import com.ledahl.apps.recieppyapi.auth.model.AuthResponse
 import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
-import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
-import com.ledahl.apps.recieppyapi.model.User
-import com.ledahl.apps.recieppyapi.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -14,7 +11,7 @@ import org.springframework.stereotype.Service
 @Service
 class AuthService(@Autowired private val firebaseAuth: FirebaseAuth,
                   @Autowired private val tokenService: TokenService,
-                  @Autowired private val userRepository: UserRepository) {
+                  @Autowired private val userService: UserService) {
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
 
     @Throws(NotAuthenticatedException::class)
@@ -31,44 +28,23 @@ class AuthService(@Autowired private val firebaseAuth: FirebaseAuth,
                 throw NotAuthenticatedException("Phone number not found")
             }
 
-            val existingUser = userRepository.getUserFromPhoneNumber(authData.phoneNumber)
+            val existingUser = userService.getUserFromPhoneNumber(authData.phoneNumber)
             val generatedToken = tokenService.generateToken(authData.phoneNumber)
 
             if (existingUser == null) {
-                val newAuthenticatedUser = createUser(phoneNumber = authData.phoneNumber, token = generatedToken)
+                val newAuthenticatedUser = userService.createUser(phoneNumber = authData.phoneNumber, token = generatedToken)
                 return AuthResponse(
-                        user = newAuthenticatedUser,
-                        token = generatedToken,
+                        user = newAuthenticatedUser.copy(token = generatedToken),
                         firstLogin = true
                 )
             }
 
             val authenticatedUser = existingUser.copy(token = generatedToken)
-            userRepository.saveTokenForUser(authenticatedUser)
-            return AuthResponse(
-                    user = authenticatedUser,
-                    token = generatedToken
-            )
+            userService.saveToken(authenticatedUser)
+            return AuthResponse(user = authenticatedUser)
         } catch (exception: Exception) {
             logger.info("Failed to authenticate user with phone number: {} and uid: {}", authData.phoneNumber, authData.uid)
             throw NotAuthenticatedException("Authentication failed")
         }
-    }
-
-    @Throws(NotAuthorizedException::class)
-    fun getRequestToken(): String {
-        return tokenService.getRequestToken()
-    }
-
-    private fun createUser(phoneNumber: String, token: String): User {
-        val newUser = User(
-                id = 0,
-                firstName = "",
-                lastName = "",
-                phoneNumber = phoneNumber,
-                token = token
-        )
-        val newUserId = userRepository.save(newUser)
-        return newUser.copy(id = newUserId.toLong())
     }
 }
