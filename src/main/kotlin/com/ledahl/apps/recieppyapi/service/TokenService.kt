@@ -36,7 +36,6 @@ class TokenService {
         return token
     }
 
-    @Throws(NotAuthenticatedException::class)
     fun verifyUserToken(user: User?): User? {
         try {
             val claims = Jwts.parser()
@@ -46,8 +45,8 @@ class TokenService {
 
             val phoneNumber = claims.subject
             logger.info("Verified token for user: {}", phoneNumber)
-        } catch (exception: JwtException) {
-            logger.info("Expired token for user: {}", user?.phoneNumber)
+        } catch (exception: Exception) {
+            logger.info("Failed to verify token for user: {}", user?.phoneNumber)
             return null
         }
         return user

@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.service
 
 import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
 import com.ledahl.apps.recieppyapi.model.User
+import com.ledahl.apps.recieppyapi.model.enums.UserRole
 import com.ledahl.apps.recieppyapi.model.input.UserInput
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,8 +11,9 @@ import org.springframework.stereotype.Service
 @Service
 class UserService(@Autowired private val userRepository: UserRepository) {
     fun getUsers(user: User?): List<User> {
-        // TODO: Check if user has appropriate role
-        user ?: throw NotAuthorizedException()
+        if (user?.role != UserRole.ADMIN) {
+            throw NotAuthorizedException()
+        }
         return userRepository.getUsers()
     }
 
@@ -30,8 +32,9 @@ class UserService(@Autowired private val userRepository: UserRepository) {
                 phoneNumber = phoneNumber,
                 token = token
         )
-        val newUserId = userRepository.save(newUser)
-        return newUser.copy(id = newUserId.toLong())
+        val newUserId = userRepository.save(newUser).toLong()
+        userRepository.saveRoleForUser(newUserId)
+        return newUser.copy(id = newUserId)
     }
 
     fun updateUser(updatedUser: UserInput, user: User?): User {
