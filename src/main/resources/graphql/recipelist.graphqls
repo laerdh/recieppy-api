@@ -7,7 +7,7 @@ type RecipeList {
 
 extend type Query {
     recipeList(id: ID): RecipeList
-    recipeLists: [RecipeList]!
+    recipeLists: [RecipeList!]!
 }
 
 input RecipeListInput {
