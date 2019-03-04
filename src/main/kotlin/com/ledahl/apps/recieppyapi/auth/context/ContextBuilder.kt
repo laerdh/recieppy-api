@@ -21,6 +21,9 @@ class ContextBuilder(@Autowired private val userRepository: UserRepository,
                     tokenService.verifyUserToken(user)
                 }
 
+        // Store user in current request so that we can validate token in SecurityQraphQLAspect
+        httpServletRequest?.setAttribute("USER", user)
+
         return AuthContext(request = httpServletRequest, user = user)
     }
 }
