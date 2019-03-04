@@ -1,13 +1,15 @@
 package com.ledahl.apps.recieppyapi.auth
 
-import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
+import com.ledahl.apps.recieppyapi.model.User
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.annotation.Before
 import org.aspectj.lang.annotation.Pointcut
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
+import org.springframework.web.context.request.RequestAttributes
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
 
 /**
  * https://mi3o.com/spring-graphql-security/
@@ -15,7 +17,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 @Aspect
 @Component
 @Order(1)
-class SecurityQraphQLAspect() {
+class SecurityQraphQLAspect {
 
     /**
      * All graphQLResolver methods can be called only by authenticated user.
@@ -24,9 +26,11 @@ class SecurityQraphQLAspect() {
     @Before("allGraphQLResolverMethods() && isDefinedInApplication() && !isMethodAnnotatedAsUnsecured()")
     fun doSecurityCheck() {
         val requestAttributes = RequestContextHolder.currentRequestAttributes() as? ServletRequestAttributes
-        val token = requestAttributes?.request?.getHeader("Authorization")
-        if (token.isNullOrEmpty()) {
-            throw NotAuthenticatedException("Authorization token missing")
+        val response = requestAttributes?.response
+
+        val user: User? = requestAttributes?.getAttribute("USER", RequestAttributes.SCOPE_REQUEST) as? User
+        if (user == null) {
+            response?.sendError(SC_UNAUTHORIZED, "Invalid token")
         }
     }
 
