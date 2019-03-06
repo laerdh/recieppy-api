@@ -37,9 +37,19 @@ class Mutation(@Autowired private val authService: AuthService,
         return recipeListService.createRecipeList(recipeList = recipeList, user = user)
     }
 
+    fun deleteRecipeList(id: Long, env: DataFetchingEnvironment): Long {
+        val user = env.getContext<AuthContext>().user
+        return recipeListService.deleteRecipeList(id = id, user = user)
+    }
+
     fun newRecipe(recipe: RecipeInput, env: DataFetchingEnvironment): Recipe? {
         val user = env.getContext<AuthContext>().user
         return recipeService.createRecipe(recipe = recipe, user = user)
+    }
+
+    fun deleteRecipe(id: Long, env: DataFetchingEnvironment): Long? {
+        val user = env.getContext<AuthContext>().user
+        return recipeService.deleteRecipe(id = id, user = user)
     }
 
     fun newTag(tag: TagInput, env: DataFetchingEnvironment): Tag? {

@@ -10,6 +10,8 @@ import com.ledahl.apps.recieppyapi.model.input.TagInput
 import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
 import com.ledahl.apps.recieppyapi.repository.RecipeRepository
 import com.ledahl.apps.recieppyapi.repository.TagRepository
+import graphql.GraphQLException
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Service
 class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
                     @Autowired private val recipeListRepository: RecipeListRepository,
                     @Autowired private val tagRepository: TagRepository) {
+    private val logger = LoggerFactory.getLogger(RecipeService::class.java)
+
     fun getRecipe(id: Long, user: User?): Recipe? {
         user ?: throw NotAuthorizedException()
         return recipeRepository.getRecipe(id)
@@ -74,5 +78,24 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
             return newTag.copy(id = newTagId.toLong())
         }
         return null
+    }
+
+    fun deleteRecipe(id: Long, user: User?): Long {
+        user ?: throw NotAuthorizedException()
+
+        val recipe = recipeRepository.getRecipe(id) ?: throw GraphQLException("Recipe with id: $id not found")
+        val usersRecipeLists = recipeListRepository.getRecipeLists(user.id)
+        val userIsOwner = usersRecipeLists.any { it.id == recipe.recipeListId }
+        if (!userIsOwner) {
+            logger.info("User (id: {}) tried to delete other users recipe (id: {})", user.id, id)
+            throw NotAuthorizedException("User is not owner of recipe list (id: $id)")
+        }
+
+        val deleted = recipeRepository.delete(id)
+        if (deleted == 0) {
+            throw GraphQLException("Recipe (id: $id) not found")
+        }
+
+        return id
     }
 }
