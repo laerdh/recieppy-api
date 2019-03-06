@@ -25,7 +25,7 @@ apply plugin: 'io.spring.dependency-management'
 apply plugin: 'org.flywaydb.flyway'
 
 group = 'com.ledahl.apps'
-version = '0.0.6-SNAPSHOT'
+version = '0.0.7-SNAPSHOT'
 sourceCompatibility = 1.8
 compileKotlin {
 	kotlinOptions {
