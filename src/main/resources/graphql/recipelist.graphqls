@@ -16,4 +16,5 @@ input RecipeListInput {
 
 extend type Mutation {
     newRecipeList(input: RecipeListInput): RecipeList
+    deleteRecipeList(id: ID!): ID!
 }

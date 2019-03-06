@@ -83,6 +83,26 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
+    fun delete(id: Long): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("id", id)
+
+        return namedTemplate.update("DELETE FROM recipe WHERE id = :id", parameterSource)
+    }
+
+    fun deleteRecipesForRecipeList(recipeListId: Long): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_list_id", recipeListId)
+
+        return namedTemplate.update(
+                "DELETE FROM recipe " +
+                        "WHERE recipe_list_id = :recipe_list_id",
+                parameterSource
+        )
+    }
+
     private fun mapToRecipe(rs: ResultSet): Recipe {
         return Recipe(
             id = rs.getLong("id"),

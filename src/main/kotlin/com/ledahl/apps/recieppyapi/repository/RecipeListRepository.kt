@@ -68,6 +68,32 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
     }
 
+    fun delete(recipeListId: Long): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("id", recipeListId)
+
+        return namedTemplate.update(
+                "DELETE FROM recipe_list " +
+                        "WHERE id = :id",
+                parameterSource
+        )
+    }
+
+    fun deleteUserRecipeList(recipeListId: Long, userId: Long): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_list", recipeListId)
+        parameterSource.addValue("user_id", userId)
+
+        return namedTemplate.update(
+                "DELETE FROM user_recipe_list " +
+                        "WHERE user_id = :user_id " +
+                        "AND recipe_list = :recipe_list",
+                parameterSource
+        )
+    }
+
     fun mapToRecipeList(rs: ResultSet): RecipeList {
         return RecipeList(
                 id = rs.getLong("id"),

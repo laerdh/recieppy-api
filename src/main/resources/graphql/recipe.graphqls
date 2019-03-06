@@ -23,4 +23,5 @@ input RecipeInput {
 
 type Mutation {
     newRecipe(input: RecipeInput): Recipe
+    deleteRecipe(id: ID!): ID!
 }
