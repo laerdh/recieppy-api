@@ -1,0 +1,61 @@
+image: docker:latest
+services:
+  - docker:dind
+
+stages:
+  - build
+  - push
+  - deploy
+
+before_script:
+  - 'which ssh-agent || ( apk update && apk add openssh-client )'
+  - mkdir -p ~/.ssh
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 700 ~/.ssh/id_rsa
+  - eval $(ssh-agent -s)
+  - ssh-add ~/.ssh/id_rsa
+  - ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+  - chmod 644 ~/.ssh/known_hosts
+  - export TAG=$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print tolower(a[2]) }').$CI_COMMIT_SHORT_SHA
+
+cache:
+  paths:
+    - .gradle/wrapper
+    - .gradle/caches
+
+build:
+  image: java:8-jdk
+  stage: build
+  script:
+    - echo 'Create Firebase account file'
+    - mkdir src/main/resources/config
+    - touch src/main/resources/config/$FIREBASE_ACCOUNT_FILE
+    - echo $FIREBASE_SERVICE_ACCOUNT >> src/main/resources/config/$FIREBASE_ACCOUNT_FILE
+    - ./gradlew clean
+    - ./gradlew bootJar
+  artifacts:
+    paths:
+      - build/libs/*.jar
+
+push:
+  stage: push
+  only:
+    refs:
+      - develop
+      - master
+  script:
+    - echo 'Login to docker registry'
+    - docker login -u $GITLAB_REGISTRY_USER -p $GITLAB_REGISTRY_TOKEN registry.gitlab.com
+    - echo 'Build docker image'
+    - docker build -t $GITLAB_REGISTRY_URL:$TAG .
+    - echo 'Pushing docker image to registry'
+    - docker push $GITLAB_REGISTRY_URL:$TAG
+
+deploy:
+  stage: deploy
+  only:
+    refs:
+      - master
+  script:
+    - echo 'Deploying to' $SSH_HOST
+    - ssh $SSH_USER@$SSH_HOST "/bin/bash .$SSH_SCRIPT_PATH -r $GITLAB_REGISTRY_USER -t $GITLAB_REGISTRY_TOKEN -i $GITLAB_REGISTRY_URL:$TAG.$CI_COMMIT_SHORT_SHA -u $DATABASE_USER -d $DATABASE_PASSWORD"
