@@ -61,4 +61,9 @@ class Mutation(@Autowired private val authService: AuthService,
         val existingUser = env.getContext<AuthContext>().user
         return userService.updateUser(updatedUser = user, user = existingUser)
     }
+
+    fun renameRecipeList(id: Long, newName: String, env: DataFetchingEnvironment): RecipeList? {
+        val user = env.getContext<AuthContext>().user
+        return recipeListService.renameRecipeList(user = user, recipeListId = id, newName = newName)
+    }
 }

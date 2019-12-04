@@ -20,7 +20,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("user_id", userId)
 
         return try {
-            namedTemplate.queryForObject("SELECT * "+
+            namedTemplate.queryForObject("SELECT * " +
                     "FROM recipe_list " +
                     "INNER JOIN user_recipe_list url on recipe_list.id = url.recipe_list " +
                     "WHERE id = :id AND url.user_id = :user_id ", parameterSource) { rs, _ ->
@@ -99,6 +99,20 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 id = rs.getLong("id"),
                 name = rs.getString("name"),
                 created = rs.getDate("created").toLocalDate()
+        )
+    }
+
+    fun renameRecipeList(recipeListId: Long, newName: String): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_list_id", recipeListId)
+        parameterSource.addValue("newName", newName)
+
+        return namedTemplate.update("""
+                UPDATE recipe_list
+                SET name = :newName
+                WHERE id = :recipe_list_id
+            """.trimIndent(), parameterSource
         )
     }
 }

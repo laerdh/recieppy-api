@@ -48,4 +48,24 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
         recipeListRepository.delete(recipeListId = id)
         return id
     }
+
+    fun renameRecipeList(user: User?, recipeListId: Long, newName: String): RecipeList? {
+        user ?: throw NotAuthorizedException()
+
+        val recipeListForUser = getRecipeList(recipeListId, user)
+
+        if (recipeListForUser == null) {
+            throw GraphQLException("Recipe list (id: $recipeListId) not found")
+        }
+
+        val updated = recipeListRepository.renameRecipeList(
+                recipeListId = recipeListId,
+                newName = newName)
+
+        if (updated == 0) {
+            throw GraphQLException("Recipe list (id: $recipeListId) not found")
+        }
+
+        return getRecipeList(recipeListId, user)
+    }
 }
