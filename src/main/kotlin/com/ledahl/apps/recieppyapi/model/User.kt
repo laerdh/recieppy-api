@@ -9,4 +9,5 @@ data class User(val id: Long = 0,
                 val firebaseId: String? = null,
                 val phoneNumber: String,
                 val token: String? = null,
-                val role: UserRole = UserRole.USER)
+                val role: UserRole = UserRole.USER,
+                val pushToken: String? = null)

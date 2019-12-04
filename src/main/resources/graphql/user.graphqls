@@ -21,4 +21,5 @@ input UserInput {
 
 extend type Mutation {
     updateUser(input: UserInput): User
+    savePushToken(pushToken: String): ID
 }

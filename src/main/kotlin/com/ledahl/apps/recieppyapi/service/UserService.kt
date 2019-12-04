@@ -5,6 +5,7 @@ import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.enums.UserRole
 import com.ledahl.apps.recieppyapi.model.input.UserInput
 import com.ledahl.apps.recieppyapi.repository.UserRepository
+import graphql.GraphQLException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -51,5 +52,15 @@ class UserService(@Autowired private val userRepository: UserRepository) {
 
     fun saveToken(user: User) {
         userRepository.saveTokenForUser(user)
+    }
+
+    fun savePushToken(pushToken: String?, user: User?): Int? {
+        user ?: throw NotAuthorizedException()
+        val tokenSaved = userRepository.savePushToken(pushToken, user.id)
+
+        if (tokenSaved == null) {
+            throw GraphQLException("Could not save pushToken for user with id: $user.id")
+        }
+        return tokenSaved
     }
 }
