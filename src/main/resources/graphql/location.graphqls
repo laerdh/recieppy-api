@@ -1,0 +1,21 @@
+type Location {
+    id: ID!
+    name: String!
+    address: String
+    owner: ID!
+}
+
+input NewLocationInput {
+    name: String!
+    address: String
+}
+
+extend type Mutation {
+    newLocation(input: NewLocationInput): Int
+    acceptInvite(inviteCode: String): Boolean
+}
+
+extend type Query {
+    getInviteCode: String!
+}
+

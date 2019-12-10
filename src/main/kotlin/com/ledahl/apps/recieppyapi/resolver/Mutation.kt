@@ -18,7 +18,9 @@ import org.springframework.stereotype.Component
 @Component
 class Mutation(@Autowired private val recipeService: RecipeService,
                @Autowired private val recipeListService: RecipeListService,
-               @Autowired private val userService: UserService) : GraphQLMutationResolver {
+               @Autowired private val userService: UserService,
+               @Autowired private val locationService: LocationService)
+    : GraphQLMutationResolver {
 
     fun newRecipeList(recipeList: RecipeListInput, env: DataFetchingEnvironment): RecipeList? {
         val user = env.getContext<AuthContext>().user
@@ -58,5 +60,15 @@ class Mutation(@Autowired private val recipeService: RecipeService,
     fun savePushToken(pushToken: String?, env: DataFetchingEnvironment): Int? {
         val user = env.getContext<AuthContext>().user
         return userService.savePushToken(pushToken, user)
+    }
+
+    fun newLocation(input: NewLocationInput, env: DataFetchingEnvironment): Int {
+        val user = env.getContext<AuthContext>().user
+        return locationService.createNewLocation(input, user).toInt()
+    }
+
+    fun acceptInvite(inviteCode: String, env: DataFetchingEnvironment): Boolean {
+        val user = env.getContext<AuthContext>().user
+        return locationService.acceptInviteForUser(user, inviteCode)
     }
 }

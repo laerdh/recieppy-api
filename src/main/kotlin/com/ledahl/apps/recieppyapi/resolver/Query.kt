@@ -6,6 +6,7 @@ import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.RecipeList
 import com.ledahl.apps.recieppyapi.model.Tag
 import com.ledahl.apps.recieppyapi.model.User
+import com.ledahl.apps.recieppyapi.service.LocationService
 import com.ledahl.apps.recieppyapi.service.RecipeListService
 import com.ledahl.apps.recieppyapi.service.RecipeService
 import com.ledahl.apps.recieppyapi.service.UserService
@@ -17,7 +18,8 @@ import org.springframework.stereotype.Component
 @Component
 class Query(@Autowired private val userService: UserService,
             @Autowired private val recipeService: RecipeService,
-            @Autowired private val recipeListService: RecipeListService) : GraphQLQueryResolver {
+            @Autowired private val recipeListService: RecipeListService,
+            @Autowired private val locationService: LocationService) : GraphQLQueryResolver {
 
     fun getUsers(env: DataFetchingEnvironment): List<User> {
         val user = env.getContext<AuthContext>().user
@@ -51,5 +53,10 @@ class Query(@Autowired private val userService: UserService,
     fun getTags(env: DataFetchingEnvironment): List<Tag> {
         val user = env.getContext<AuthContext>().user
         return recipeService.getTags(user)
+    }
+
+    fun getInviteCode(env: DataFetchingEnvironment): String {
+        val user = env.getContext<AuthContext>().user
+        return locationService.getInviteCode(user = user)
     }
 }
