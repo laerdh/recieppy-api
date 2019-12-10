@@ -33,17 +33,26 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getRecipeLists(userId: Long): List<RecipeList> {
+    fun getRecipeLists(userId: Long, locationId: Int): List<RecipeList> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", userId)
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("location_id", locationId)
 
-        return namedTemplate.query("""
-            SELECT *
-            FROM recipe_list
-            INNER JOIN user_recipe_list url on recipe_list.id = url.recipe_list
-            WHERE url.user_id = :id
-        """.trimIndent(), parameterSource) { rs, _ ->
+        val query = """
+            SELECT
+            	rl.id, rl.name, rl.created, lrc.location_id
+            FROM
+            	recipe_list rl
+            	INNER JOIN location_recipe_list lrc ON lrc.recipe_list_id = rl.id
+            	INNER JOIN location_user_account lua ON lua.location_id = lrc.location_id
+            WHERE
+            	lua.user_account_id = :user_id
+            AND
+            	lrc.location_id = :location_id
+        """.trimIndent()
+
+        return namedTemplate.query(query, parameterSource) { rs, _ ->
             mapToRecipeList(rs)
         }
     }

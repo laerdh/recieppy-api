@@ -45,9 +45,9 @@ class Query(@Autowired private val userService: UserService,
         return recipeListService.getRecipeList(id = id, user = user)
     }
 
-    fun getRecipeLists(env: DataFetchingEnvironment): List<RecipeList> {
+    fun getRecipeLists(locationId: Int, env: DataFetchingEnvironment): List<RecipeList> {
         val user = env.getContext<AuthContext>().user
-        return recipeListService.getRecipeListsForUser(user)
+        return recipeListService.getRecipeListsForUser(user, locationId)
     }
 
     fun getTags(env: DataFetchingEnvironment): List<Tag> {

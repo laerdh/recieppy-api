@@ -7,6 +7,7 @@ import com.ledahl.apps.recieppyapi.model.Tag
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.RecipeInput
 import com.ledahl.apps.recieppyapi.model.input.TagInput
+import com.ledahl.apps.recieppyapi.repository.LocationRepository
 import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
 import com.ledahl.apps.recieppyapi.repository.RecipeRepository
 import com.ledahl.apps.recieppyapi.repository.TagRepository
@@ -18,7 +19,8 @@ import org.springframework.stereotype.Service
 @Service
 class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
                     @Autowired private val recipeListRepository: RecipeListRepository,
-                    @Autowired private val tagRepository: TagRepository) {
+                    @Autowired private val tagRepository: TagRepository,
+                    @Autowired private val locationRepository: LocationRepository) {
     private val logger = LoggerFactory.getLogger(RecipeService::class.java)
 
     fun getRecipe(id: Long, user: User?): Recipe? {
@@ -46,7 +48,13 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     fun createRecipe(recipe: RecipeInput, user: User?): Recipe? {
         user ?: throw NotAuthorizedException()
-        val noRecipeLists = recipeListRepository.getRecipeLists(user.id).none { it.id == recipe.recipeListId }
+        val locationId = locationRepository.getLocationId(user.id, recipe.recipeListId)
+
+        if (locationId == null) {
+            throw GraphQLException("No location for user with recipeListId")
+        }
+
+        val noRecipeLists = recipeListRepository.getRecipeLists(user.id, locationId).none { it.id == recipe.recipeListId }
         if (noRecipeLists) {
             throw NotAuthorizedException("User does not subscribe to this recipelist")
         }
@@ -85,7 +93,12 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         user ?: throw NotAuthorizedException()
 
         val recipe = recipeRepository.getRecipe(id) ?: throw GraphQLException("Recipe with id: $id not found")
-        val usersRecipeLists = recipeListRepository.getRecipeLists(user.id)
+
+        val locationId = locationRepository.getLocationId(user.id, recipe.recipeListId)
+                ?: throw GraphQLException("No location for userId ${user.id} with recipeListId ${recipe.recipeListId}")
+
+        val usersRecipeLists = recipeListRepository.getRecipeLists(user.id, locationId)
+
         val userIsOwner = usersRecipeLists.any { it.id == recipe.recipeListId }
         if (!userIsOwner) {
             logger.info("User (id: {}) tried to delete other users recipe (id: {})", user.id, id)

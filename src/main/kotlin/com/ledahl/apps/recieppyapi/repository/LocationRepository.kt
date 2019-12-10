@@ -1,5 +1,6 @@
 package com.ledahl.apps.recieppyapi.repository
 
+import com.ledahl.apps.recieppyapi.model.Location
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -95,6 +96,35 @@ class LocationRepository(
             }
         } catch (dae: DataAccessException) {
             return 0
+        }
+    }
+
+    fun getLocationId(userId: Long, recipeListId: Long): Int? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_list_id", recipeListId)
+
+        val query = """
+            SELECT 
+            	id AS "location_id"
+            FROM
+            	location l 
+            	INNER JOIN location_user_account lua ON lua.location_id = l.id
+            	INNER JOIN location_recipe_list lrl ON lrl.location_id = l.id
+            WHERE
+            	lua.user_account_id = :user_id
+            AND 
+            	lrl.recipe_list_id = :recipe_list_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                rs.getInt("location_id")
+            }
+        } catch (dae: DataAccessException) {
+            return null
         }
     }
 }

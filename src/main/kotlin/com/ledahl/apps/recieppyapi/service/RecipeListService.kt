@@ -19,9 +19,9 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
         return recipeListRepository.getRecipeList(id = id, userId = user.id)
     }
 
-    fun getRecipeListsForUser(user: User?): List<RecipeList> {
+    fun getRecipeListsForUser(user: User?, locationId: Int): List<RecipeList> {
         user ?: throw NotAuthorizedException()
-        return recipeListRepository.getRecipeLists(user.id)
+        return recipeListRepository.getRecipeLists(user.id, locationId)
     }
 
     fun createRecipeList(recipeList: RecipeListInput, user: User?): RecipeList? {
