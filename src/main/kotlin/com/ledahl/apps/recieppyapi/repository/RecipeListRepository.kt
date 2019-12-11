@@ -69,14 +69,14 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
 
-    fun saveRecipeList(recipeListId: Long, userId: Long) {
+    fun connectRecipeListAndLocation(recipeListId: Long, locationId: Long) {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
-                .withTableName("user_recipe_list")
+                .withTableName("location_recipe_list")
                 .usingGeneratedKeyColumns("id")
 
         val parameters = HashMap<String, Any>()
-        parameters["user_id"] = userId
-        parameters["recipe_list"] = recipeListId
+        parameters["location_id"] = locationId
+        parameters["recipe_list_id"] = recipeListId
 
         simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
     }

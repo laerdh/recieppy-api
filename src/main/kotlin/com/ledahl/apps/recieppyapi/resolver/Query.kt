@@ -2,10 +2,7 @@ package com.ledahl.apps.recieppyapi.resolver
 
 import com.coxautodev.graphql.tools.GraphQLQueryResolver
 import com.ledahl.apps.recieppyapi.auth.context.AuthContext
-import com.ledahl.apps.recieppyapi.model.Recipe
-import com.ledahl.apps.recieppyapi.model.RecipeList
-import com.ledahl.apps.recieppyapi.model.Tag
-import com.ledahl.apps.recieppyapi.model.User
+import com.ledahl.apps.recieppyapi.model.*
 import com.ledahl.apps.recieppyapi.service.LocationService
 import com.ledahl.apps.recieppyapi.service.RecipeListService
 import com.ledahl.apps.recieppyapi.service.RecipeService
@@ -58,5 +55,10 @@ class Query(@Autowired private val userService: UserService,
     fun getInviteCode(env: DataFetchingEnvironment): String {
         val user = env.getContext<AuthContext>().user
         return locationService.getInviteCode(user = user)
+    }
+
+    fun getLocations(env: DataFetchingEnvironment): List<Location> {
+        val user = env.getContext<AuthContext>().user
+        return locationService.getLocations(user)
     }
 }

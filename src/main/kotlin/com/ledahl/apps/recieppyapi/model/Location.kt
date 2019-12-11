@@ -4,5 +4,6 @@ data class Location(
         val id: Long = 0,
         val name: String,
         val address: String?,
-        val owner: Int
+        val owner: Int,
+        val inviteCode: String
 )

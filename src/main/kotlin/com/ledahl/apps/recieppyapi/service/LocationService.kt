@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.service
 
 import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
+import com.ledahl.apps.recieppyapi.model.Location
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.NewLocationInput
 import com.ledahl.apps.recieppyapi.repository.LocationRepository
@@ -13,7 +14,7 @@ import java.util.*
 class LocationService(
         @Autowired private val locationRepository: LocationRepository
 ) {
-    fun createNewLocation(newLocationInput: NewLocationInput, user: User?): Long {
+    fun createNewLocation(newLocationInput: NewLocationInput, user: User?): Location? {
         val userId = user?.id ?: throw NotAuthorizedException()
 
         val inviteCode = UUID.randomUUID().toString().substring(0, 6)
@@ -27,7 +28,12 @@ class LocationService(
             val locationUserAccountId = insertUserOnLocation(userId, locationId)
 
             if (locationUserAccountId != -1L) {
-                return locationUserAccountId.toLong()
+                return Location(
+                        id = locationId,
+                        name = newLocationInput.name,
+                        address = newLocationInput.address,
+                        owner = userId.toInt(),
+                        inviteCode = inviteCode)
             } else {
                 throw GraphQLException("Could not insert userId $userId to location ${newLocationInput.name}")
             }
@@ -55,7 +61,7 @@ class LocationService(
             throw GraphQLException("User has no locations")
         }
 
-        val existingCodeForLocation = locationRepository.getInviteCode(locations.first())
+        val existingCodeForLocation = locations.first().inviteCode
 
         if (existingCodeForLocation == null) {
             throw GraphQLException("Couldn't get inviteCode for location")
@@ -76,5 +82,10 @@ class LocationService(
         val userInserted = insertUserOnLocation(userId, locationIdForInviteCode)
 
         return userInserted.toInt() > 0
+    }
+
+    fun getLocations(user: User?): List<Location> {
+        val userId = user?.id ?: throw NotAuthorizedException()
+        return locationRepository.getLocationsForUser(userId)
     }
 }

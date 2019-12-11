@@ -3,6 +3,8 @@ type Location {
     name: String!
     address: String
     owner: ID!
+    recipeLists: [RecipeList]
+    inviteCode: String!
 }
 
 input NewLocationInput {
@@ -11,11 +13,12 @@ input NewLocationInput {
 }
 
 extend type Mutation {
-    newLocation(input: NewLocationInput): Int
+    newLocation(input: NewLocationInput): Location
     acceptInvite(inviteCode: String): Boolean
 }
 
 extend type Query {
     getInviteCode: String!
+    locations: [Location]!
 }
 

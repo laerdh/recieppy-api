@@ -26,11 +26,16 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
 
     fun createRecipeList(recipeList: RecipeListInput, user: User?): RecipeList? {
         user ?: throw NotAuthorizedException()
-        val newRecipeList = RecipeList(name = recipeList.name, created = LocalDate.now())
 
+        val newRecipeList = RecipeList(name = recipeList.name, created = LocalDate.now())
         val newRecipeListId = recipeListRepository.save(newRecipeList)
+
         if (newRecipeListId != 0) {
-            recipeListRepository.saveRecipeList(recipeListId = newRecipeListId.toLong(), userId = user.id)
+
+            recipeListRepository.connectRecipeListAndLocation(
+                    recipeListId = newRecipeListId.toLong(),
+                    locationId = recipeList.locationId.toLong())
+
             return newRecipeList.copy(id = newRecipeListId.toLong())
         }
         return null

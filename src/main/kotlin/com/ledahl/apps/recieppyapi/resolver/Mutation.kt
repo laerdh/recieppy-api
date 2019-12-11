@@ -2,14 +2,8 @@ package com.ledahl.apps.recieppyapi.resolver
 
 import com.coxautodev.graphql.tools.GraphQLMutationResolver
 import com.ledahl.apps.recieppyapi.auth.context.AuthContext
-import com.ledahl.apps.recieppyapi.model.Recipe
-import com.ledahl.apps.recieppyapi.model.RecipeList
-import com.ledahl.apps.recieppyapi.model.Tag
-import com.ledahl.apps.recieppyapi.model.User
-import com.ledahl.apps.recieppyapi.model.input.RecipeInput
-import com.ledahl.apps.recieppyapi.model.input.RecipeListInput
-import com.ledahl.apps.recieppyapi.model.input.TagInput
-import com.ledahl.apps.recieppyapi.model.input.UserInput
+import com.ledahl.apps.recieppyapi.model.*
+import com.ledahl.apps.recieppyapi.model.input.*
 import com.ledahl.apps.recieppyapi.service.*
 import graphql.schema.DataFetchingEnvironment
 import org.springframework.beans.factory.annotation.Autowired
@@ -64,7 +58,7 @@ class Mutation(@Autowired private val recipeService: RecipeService,
 
     fun newLocation(input: NewLocationInput, env: DataFetchingEnvironment): Int {
         val user = env.getContext<AuthContext>().user
-        return locationService.createNewLocation(input, user).toInt()
+        return locationService.createNewLocation(input, user)
     }
 
     fun acceptInvite(inviteCode: String, env: DataFetchingEnvironment): Boolean {
