@@ -106,13 +106,12 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_list_id", recipeListId)
-        parameterSource.addValue("newName", newName)
+        parameterSource.addValue("new_name", newName)
 
         return namedTemplate.update("""
                 UPDATE recipe_list
-                SET name = :newName
+                SET name = :new_name
                 WHERE id = :recipe_list_id
-            """.trimIndent(), parameterSource
-        )
+            """.trimIndent(), parameterSource)
     }
 }
