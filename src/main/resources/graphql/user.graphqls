@@ -4,8 +4,8 @@ type User {
     lastName: String!
     email: String
     phoneNumber: String
-    token: String
     recipeLists: [RecipeList]!
+    firstLogin: Boolean!
 }
 
 extend type Query {

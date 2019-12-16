@@ -1,9 +1,6 @@
 package com.ledahl.apps.recieppyapi.resolver
 
 import com.coxautodev.graphql.tools.GraphQLMutationResolver
-import com.ledahl.apps.recieppyapi.auth.Unsecured
-import com.ledahl.apps.recieppyapi.auth.model.AuthData
-import com.ledahl.apps.recieppyapi.auth.model.AuthResponse
 import com.ledahl.apps.recieppyapi.auth.context.AuthContext
 import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.RecipeList
@@ -19,15 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class Mutation(@Autowired private val authService: AuthService,
-               @Autowired private val recipeService: RecipeService,
+class Mutation(@Autowired private val recipeService: RecipeService,
                @Autowired private val recipeListService: RecipeListService,
                @Autowired private val userService: UserService) : GraphQLMutationResolver {
-
-    @Unsecured
-    fun authenticate(authData: AuthData): AuthResponse {
-        return authService.authenticate(authData)
-    }
 
     fun newRecipeList(recipeList: RecipeListInput, env: DataFetchingEnvironment): RecipeList? {
         val user = env.getContext<AuthContext>().user
