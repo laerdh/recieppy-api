@@ -123,4 +123,17 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 role = UserRole.valueOf(rs.getString("user_role"))
         )
     }
+
+    fun savePushToken(pushToken: String?, id: Long): Int? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("push_token", pushToken)
+        parameterSource.addValue("id", id)
+
+        return try {
+            namedTemplate.update("UPDATE user_account SET push_token = :push_token WHERE id = :id", parameterSource)
+        } catch (exception: DataAccessException) {
+            null
+        }
+    }
 }

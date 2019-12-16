@@ -2,7 +2,6 @@ package com.ledahl.apps.recieppyapi.resolver
 
 import com.coxautodev.graphql.tools.GraphQLMutationResolver
 import com.ledahl.apps.recieppyapi.auth.Unsecured
-import com.ledahl.apps.recieppyapi.service.AuthService
 import com.ledahl.apps.recieppyapi.auth.model.AuthData
 import com.ledahl.apps.recieppyapi.auth.model.AuthResponse
 import com.ledahl.apps.recieppyapi.auth.context.AuthContext
@@ -14,9 +13,7 @@ import com.ledahl.apps.recieppyapi.model.input.RecipeInput
 import com.ledahl.apps.recieppyapi.model.input.RecipeListInput
 import com.ledahl.apps.recieppyapi.model.input.TagInput
 import com.ledahl.apps.recieppyapi.model.input.UserInput
-import com.ledahl.apps.recieppyapi.service.RecipeListService
-import com.ledahl.apps.recieppyapi.service.RecipeService
-import com.ledahl.apps.recieppyapi.service.UserService
+import com.ledahl.apps.recieppyapi.service.*
 import graphql.schema.DataFetchingEnvironment
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -62,8 +59,8 @@ class Mutation(@Autowired private val authService: AuthService,
         return userService.updateUser(updatedUser = user, user = existingUser)
     }
 
-    fun renameRecipeList(id: Long, newName: String, env: DataFetchingEnvironment): RecipeList? {
+    fun savePushToken(pushToken: String?, env: DataFetchingEnvironment): Int? {
         val user = env.getContext<AuthContext>().user
-        return recipeListService.renameRecipeList(user = user, recipeListId = id, newName = newName)
+        return userService.savePushToken(pushToken, user)
     }
 }
