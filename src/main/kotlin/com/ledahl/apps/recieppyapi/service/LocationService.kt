@@ -22,14 +22,14 @@ class LocationService(
         val locationId = locationRepository.createNewLocation(newLocationInput.name,
                 newLocationInput.address,
                 userId,
-                inviteCode).toLong()
+                inviteCode)
 
-        if (locationId != -1L) {
-            val locationUserAccountId = insertUserOnLocation(userId, locationId)
+        if (locationId != null) {
+            val locationUserAccountId = insertUserOnLocation(userId, locationId.toLong())
 
-            if (locationUserAccountId != -1L) {
+            if (locationUserAccountId != 0) {
                 return Location(
-                        id = locationId,
+                        id = locationId.toLong(),
                         name = newLocationInput.name,
                         address = newLocationInput.address,
                         owner = userId.toInt(),
@@ -61,13 +61,7 @@ class LocationService(
             throw GraphQLException("User has no locations")
         }
 
-        val existingCodeForLocation = locations.first().inviteCode
-
-        if (existingCodeForLocation == null) {
-            throw GraphQLException("Couldn't get inviteCode for location")
-        }
-
-        return existingCodeForLocation
+        return locations.first().inviteCode
     }
 
     fun acceptInviteForUser(user: User?, inviteCode: String): Boolean {

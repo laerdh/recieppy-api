@@ -16,7 +16,7 @@ class LocationRepository(
         @Autowired private val jdbcTemplate: JdbcTemplate
 ) {
 
-    fun createNewLocation(name: String, address: String?, userId: Long, inviteCode: String): Number {
+    fun createNewLocation(name: String, address: String?, userId: Long, inviteCode: String): Number? {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("location")
                 .usingGeneratedKeyColumns("id")
@@ -31,7 +31,7 @@ class LocationRepository(
         return try {
             simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
         } catch (ex: Exception) {
-            return -1
+            return null
         }
     }
 
