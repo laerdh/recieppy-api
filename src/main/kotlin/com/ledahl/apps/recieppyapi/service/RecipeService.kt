@@ -64,6 +64,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
             recipe.tags?.let {
                 recipeRepository.saveTagsToRecipe(recipeId = newRecipeId.toLong(), tags = it)
             }
+
             return newRecipe.copy(id = newRecipeId.toLong())
         }
         return null
