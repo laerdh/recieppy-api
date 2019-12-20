@@ -51,11 +51,26 @@ push:
     - echo 'Pushing docker image to registry'
     - docker push $GITLAB_REGISTRY_URL:$TAG
 
-deploy:
+deploy_test:
   stage: deploy
+  script:
+    - echo 'Deploying to test at' $SSH_HOST
+    - ssh $SSH_USER@$SSH_HOST "/bin/bash $SSH_RUN_DEPLOY_SCRIPT -r $GITLAB_REGISTRY_USER -t $GITLAB_REGISTRY_TOKEN -i $GITLAB_REGISTRY_URL:$TAG -l $DATABASE_URL -d $DATABASE_SCHEMA -u $DATABASE_USER -p $DATABASE_PASSWORD -v $OAUTH2_JWT_ENDPOINT"
+  environment:
+    name: test
+    url: https://test.ledahl.com/recieppy-api
+  only:
+    refs:
+      - develop
+
+deploy_prod:
+  stage: deploy
+  script:
+    - echo 'Deploying to production at' $SSH_HOST
+    - ssh $SSH_USER@$SSH_HOST "/bin/bash $SSH_RUN_DEPLOY_SCRIPT -r $GITLAB_REGISTRY_USER -t $GITLAB_REGISTRY_TOKEN -i $GITLAB_REGISTRY_URL:$TAG -l $DATABASE_URL -d $DATABASE_SCHEMA -u $DATABASE_USER -p $DATABASE_PASSWORD -v $OAUTH2_JWT_ENDPOINT"
+  environment:
+    name: production
+    url: https://ledahl.com/recieppy-api
   only:
     refs:
       - master
-  script:
-    - echo 'Deploying to' $SSH_HOST
-    - ssh $SSH_USER@$SSH_HOST "/bin/bash .$SSH_SCRIPT_PATH -r $GITLAB_REGISTRY_USER -t $GITLAB_REGISTRY_TOKEN -i $GITLAB_REGISTRY_URL:$TAG.$CI_COMMIT_SHORT_SHA -u $DATABASE_USER -d $DATABASE_PASSWORD"

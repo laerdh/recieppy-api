@@ -3,7 +3,7 @@ spring:
     name: recieppy-api
 
 server:
-  port: 8000
+  port: ${SERVER_PORT:8000}
 
 graphql:
   servlet:
