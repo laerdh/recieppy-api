@@ -7,6 +7,8 @@ import com.ledahl.apps.recieppyapi.model.input.UserInput
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import graphql.GraphQLException
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.Authentication
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.stereotype.Service
 
 @Service
@@ -18,24 +20,33 @@ class UserService(@Autowired private val userRepository: UserRepository) {
         return userRepository.getUsers()
     }
 
-    fun getUserFromToken(token: String): User? {
-        return userRepository.getUserFromToken(token)
-    }
+    fun handleUserAuthentication(authentication: Authentication): User {
+        val auth = authentication as? JwtAuthenticationToken ?: throw NotAuthorizedException("User not authorized")
+        val claims = auth.token.claims
 
-    fun getUserFromPhoneNumber(phoneNumber: String): User? {
-        return userRepository.getUserFromPhoneNumber(phoneNumber)
-    }
+        val externalId = claims["sub"] as String
+        userRepository.getUserByExternalId(externalId)?.let { return it }
 
-    fun createUser(phoneNumber: String, token: String): User {
-        val newUser = User(
-                firstName = "",
-                lastName = "",
-                phoneNumber = phoneNumber,
-                token = token
+        val firstName = claims["given_name"] as String
+        val lastName = claims["family_name"] as String
+        val email = claims["email"] as String
+
+        val userFromIdToken = User(
+                id = 0L,
+                externalId = externalId,
+                firstName = firstName,
+                lastName = lastName,
+                phoneNumber = "",
+                email = email
         )
-        val newUserId = userRepository.save(newUser).toLong()
+
+        return createUser(userFromIdToken).copy(firstLogin = true)
+    }
+
+    fun createUser(user: User): User {
+        val newUserId = userRepository.save(user).toLong()
         userRepository.saveRoleForUser(newUserId)
-        return newUser.copy(id = newUserId)
+        return user.copy(id = newUserId)
     }
 
     fun updateUser(updatedUser: UserInput, user: User?): User {
@@ -48,10 +59,6 @@ class UserService(@Autowired private val userRepository: UserRepository) {
         )
         userRepository.update(userToUpdate)
         return userToUpdate
-    }
-
-    fun saveToken(user: User) {
-        userRepository.saveTokenForUser(user)
     }
 
     fun savePushToken(pushToken: String?, user: User?): Int? {

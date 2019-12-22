@@ -22,17 +22,20 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getUserFromToken(token: String): User? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("token", token)
+    fun getUserById(id: Long): User? {
+        val namedJdbcTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters.addValue("id", id)
 
         return try {
-            namedTemplate.queryForObject("SELECT u.id, firebase_id, phone_number, token, first_name, last_name, email, r.name AS user_role " +
-                    "FROM user_account u " +
-                    "LEFT JOIN user_role ur on u.id = ur.user_id " +
-                    "LEFT JOIN role r on ur.role_id = r.id " +
-                    "WHERE token = :token", parameterSource) { rs, _ ->
+            namedJdbcTemplate.queryForObject(
+                    "SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.external_id, r.name " +
+                        "FROM user_account u " +
+                        "INNER JOIN user_role ur ON u.id = ur.user_id " +
+                        "INNER JOIN role r ON ur.role_id = r.id " +
+                        "WHERE id = :id",
+                    parameters) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -40,17 +43,20 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getUserFromPhoneNumber(phoneNumber: String): User? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("phone_number", phoneNumber)
+    fun getUserByExternalId(externalId: String): User? {
+        val namedJdbcTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters.addValue("external_id", externalId)
 
         return try {
-            namedTemplate.queryForObject("SELECT u.id, firebase_id, phone_number, token, first_name, last_name, email, r.name AS user_role " +
+            namedJdbcTemplate.queryForObject(
+                    "SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.external_id, r.name AS user_role " +
                     "FROM user_account u " +
-                    "LEFT JOIN user_role ur on u.id = ur.user_id " +
-                    "LEFT JOIN role r on ur.role_id = r.id " +
-                    "WHERE phone_number = :phone_number", parameterSource) { rs, _ ->
+                    "INNER JOIN user_role ur ON u.id = ur.user_id " +
+                    "INNER JOIN role r ON ur.role_id = r.id " +
+                    "WHERE u.external_id = :external_id",
+                    parameters) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -64,10 +70,10 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 .usingGeneratedKeyColumns("id")
 
         val parameters = HashMap<String, Any?>()
+        parameters["external_id"] = user.externalId
         parameters["first_name"] = user.firstName
         parameters["last_name"] = user.lastName
-        parameters["phone_number"] = user.phoneNumber
-        parameters["token"] = user.token
+        parameters["email"] = user.email
 
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
@@ -98,28 +104,14 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun saveTokenForUser(user: User): Int? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", user.id)
-        parameterSource.addValue("token", user.token)
-
-        return try {
-            namedTemplate.update("UPDATE user_account SET token = :token WHERE id = :id", parameterSource)
-        } catch (exception: DataAccessException) {
-            null
-        }
-    }
-
     private fun mapToUser(rs: ResultSet): User? {
         return User(
                 id = rs.getLong("id"),
+                externalId = rs.getString("external_id") ?: "",
                 firstName = rs.getString("first_name"),
                 lastName = rs.getString("last_name"),
                 email = rs.getString("email"),
-                firebaseId = rs.getString("firebase_id"),
-                phoneNumber = rs.getString("phone_number"),
-                token = rs.getString("token"),
+                phoneNumber = rs.getString("phone_number") ?: "",
                 role = UserRole.valueOf(rs.getString("user_role"))
         )
     }
