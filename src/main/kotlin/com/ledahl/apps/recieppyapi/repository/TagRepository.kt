@@ -20,15 +20,14 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getTagsForRecipe(recipeId: Long): List<Tag> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("recipeId", recipeId)
+        parameterSource.addValue("recipe_id", recipeId)
 
-        return namedTemplate.query(
-                "SELECT tag_id AS id, text " +
-                        "FROM recipe_tag AS rt " +
-                        "INNER JOIN tag ON rt.tag_id = tag.id " +
-                        "WHERE rt.recipe_id = :recipeId",
-                parameterSource
-        ) { rs, _ ->
+        return namedTemplate.query("""
+            SELECT tag_id AS id, text
+            FROM recipe_tag AS rt
+            INNER JOIN tag ON rt.tag_id = tag.id
+            WHERE rt.recipe_id = :recipe_id
+        """.trimIndent(), parameterSource) { rs, _ ->
             mapToTag(rs)
         }
     }

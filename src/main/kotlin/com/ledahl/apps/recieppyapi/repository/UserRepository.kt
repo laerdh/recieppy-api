@@ -14,10 +14,12 @@ import java.sql.ResultSet
 @Repository
 class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getUsers(): List<User> {
-        return jdbcTemplate.query("SELECT u.id, firebase_id, phone_number, token, first_name, last_name, email, r.name AS user_role " +
-                "FROM user_account u " +
-                "LEFT JOIN user_role ur on u.id = ur.user_id " +
-                "LEFT JOIN role r on ur.role_id = r.id ") { rs,_ ->
+        return jdbcTemplate.query("""
+            SELECT u.id, phone_number, first_name, last_name, email, external_id
+            FROM user_account u
+            LEFT JOIN user_role ur ON u.id = ur.user_id
+            LEFT JOIN role r ON ur.role_id = r.id
+        """.trimIndent()) { rs, _ ->
             mapToUser(rs)
         }
     }
@@ -29,13 +31,13 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameters.addValue("id", id)
 
         return try {
-            namedJdbcTemplate.queryForObject(
-                    "SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.external_id, r.name " +
-                        "FROM user_account u " +
-                        "INNER JOIN user_role ur ON u.id = ur.user_id " +
-                        "INNER JOIN role r ON ur.role_id = r.id " +
-                        "WHERE id = :id",
-                    parameters) { rs, _ ->
+            namedJdbcTemplate.queryForObject("""
+                SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.external_id, r.name
+                FROM user_account u
+                INNER JOIN user_role ur ON u.id = ur.user_id
+                INNER JOIN role r ON ur.role_id = r.id
+                WHERE id = :id
+            """.trimIndent(), parameters) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -50,13 +52,13 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameters.addValue("external_id", externalId)
 
         return try {
-            namedJdbcTemplate.queryForObject(
-                    "SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.external_id, r.name AS user_role " +
-                    "FROM user_account u " +
-                    "INNER JOIN user_role ur ON u.id = ur.user_id " +
-                    "INNER JOIN role r ON ur.role_id = r.id " +
-                    "WHERE u.external_id = :external_id",
-                    parameters) { rs, _ ->
+            namedJdbcTemplate.queryForObject("""
+                SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.external_id, r.name AS user_role
+                FROM user_account u
+                INNER JOIN user_role ur ON u.id = ur.user_id
+                INNER JOIN role r ON ur.role_id = r.id
+                WHERE u.external_id = :external_id
+            """.trimIndent(), parameters) { rs, _ ->
                 mapToUser(rs)
             }
         } catch (exception: DataAccessException) {
@@ -98,7 +100,28 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("email", user.email)
 
         return try {
-            namedTemplate.update("UPDATE user_account SET first_name = :first_name, last_name = :last_name, email = :email WHERE id = :id", parameterSource)
+            namedTemplate.update("""
+                UPDATE user_account
+                SET first_name = :first_name, last_name = :last_name, email = :email
+                WHERE id = :id
+            """.trimIndent(), parameterSource)
+        } catch (exception: DataAccessException) {
+            null
+        }
+    }
+
+    fun savePushToken(pushToken: String?, id: Long): Int? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("push_token", pushToken)
+        parameterSource.addValue("id", id)
+
+        return try {
+            namedTemplate.update("""
+                UPDATE user_account
+                SET push_token = :push_token
+                WHERE id = :id
+            """.trimIndent(), parameterSource)
         } catch (exception: DataAccessException) {
             null
         }
@@ -114,18 +137,5 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 phoneNumber = rs.getString("phone_number") ?: "",
                 role = UserRole.valueOf(rs.getString("user_role"))
         )
-    }
-
-    fun savePushToken(pushToken: String?, id: Long): Int? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("push_token", pushToken)
-        parameterSource.addValue("id", id)
-
-        return try {
-            namedTemplate.update("UPDATE user_account SET push_token = :push_token WHERE id = :id", parameterSource)
-        } catch (exception: DataAccessException) {
-            null
-        }
     }
 }
