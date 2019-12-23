@@ -17,7 +17,7 @@ class LocationService(
     fun createNewLocation(newLocationInput: NewLocationInput, user: User?): Location? {
         val userId = user?.id ?: throw NotAuthorizedException()
 
-        val inviteCode = UUID.randomUUID().toString().substring(0, 6)
+        val inviteCode = createUniqueInviteCode()
 
         val locationId = locationRepository.createNewLocation(newLocationInput.name,
                 newLocationInput.address,
@@ -81,5 +81,14 @@ class LocationService(
     fun getLocations(user: User?): List<Location> {
         val userId = user?.id ?: throw NotAuthorizedException()
         return locationRepository.getLocationsForUser(userId)
+    }
+
+    private fun createUniqueInviteCode(): String {
+        val inviteCode = UUID.randomUUID().toString().substring(0, 6)
+        val existingLocationForInviteCode = locationRepository.getLocationFromInviteCode(inviteCode)
+
+        return if (existingLocationForInviteCode == null) {
+            inviteCode
+        } else createUniqueInviteCode()
     }
 }
