@@ -56,7 +56,7 @@ class Mutation(@Autowired private val recipeService: RecipeService,
         return userService.savePushToken(pushToken, user)
     }
 
-    fun newLocation(input: NewLocationInput, env: DataFetchingEnvironment): Int {
+    fun newLocation(input: NewLocationInput, env: DataFetchingEnvironment): Location? {
         val user = env.getContext<AuthContext>().user
         return locationService.createNewLocation(input, user)
     }

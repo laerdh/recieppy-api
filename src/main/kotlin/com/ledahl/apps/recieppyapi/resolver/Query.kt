@@ -9,7 +9,6 @@ import com.ledahl.apps.recieppyapi.service.RecipeService
 import com.ledahl.apps.recieppyapi.service.UserService
 import graphql.schema.DataFetchingEnvironment
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Component
 
 @Component

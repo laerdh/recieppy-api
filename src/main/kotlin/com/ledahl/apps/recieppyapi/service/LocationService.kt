@@ -5,15 +5,15 @@ import com.ledahl.apps.recieppyapi.model.Location
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.NewLocationInput
 import com.ledahl.apps.recieppyapi.repository.LocationRepository
+import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
 import graphql.GraphQLException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class LocationService(
-        @Autowired private val locationRepository: LocationRepository
-) {
+class LocationService(@Autowired private val locationRepository: LocationRepository,
+                      @Autowired private val recipeListRepository: RecipeListRepository) {
     fun createNewLocation(newLocationInput: NewLocationInput, user: User?): Location? {
         val userId = user?.id ?: throw NotAuthorizedException()
 
@@ -33,7 +33,8 @@ class LocationService(
                         name = newLocationInput.name,
                         address = newLocationInput.address,
                         owner = userId.toInt(),
-                        inviteCode = inviteCode)
+                        inviteCode = inviteCode,
+                        recipeLists = emptyList())
             } else {
                 throw GraphQLException("Could not insert userId $userId to location ${newLocationInput.name}")
             }
@@ -80,7 +81,12 @@ class LocationService(
 
     fun getLocations(user: User?): List<Location> {
         val userId = user?.id ?: throw NotAuthorizedException()
-        return locationRepository.getLocationsForUser(userId)
+        val locations = locationRepository.getLocationsForUser(userId)
+
+        return locations.map { location ->
+            val recipeLists = recipeListRepository.getRecipeLists(userId = userId, locationId = location.id.toInt())
+            location.copy(recipeLists = recipeLists)
+        }
     }
 
     private fun createUniqueInviteCode(): String {

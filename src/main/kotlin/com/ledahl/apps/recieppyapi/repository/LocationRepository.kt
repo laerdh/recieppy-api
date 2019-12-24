@@ -12,9 +12,7 @@ import java.lang.Exception
 import java.util.*
 
 @Repository
-class LocationRepository(
-        @Autowired private val jdbcTemplate: JdbcTemplate
-) {
+class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
     fun createNewLocation(name: String, address: String?, userId: Long, inviteCode: String): Number? {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
@@ -112,7 +110,8 @@ class LocationRepository(
                     name = rs.getString("name"),
                     address = rs.getString("address"),
                     owner = rs.getInt("created_by"),
-                    inviteCode = rs.getString("invite_code")
+                    inviteCode = rs.getString("invite_code"),
+                    recipeLists = emptyList()
             )
         }
     }
