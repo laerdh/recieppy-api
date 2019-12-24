@@ -31,12 +31,12 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("id", recipeListId)
 
-        return namedTemplate.query(
-                "SELECT r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id " +
-                        "FROM recipe_list rl " +
-                        "INNER JOIN recipe r on rl.id = r.recipe_list_id " +
-                        "WHERE rl.id = :id",
-                parameterSource) { rs, _ ->
+        return namedTemplate.query("""
+            SELECT r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id
+            FROM recipe_list rl
+            INNER JOIN recipe r ON rl.id = r.recipe_list_id
+            WHERE rl.id = :id
+        """.trimIndent(), parameterSource) { rs, _ ->
             mapToRecipe(rs)
         }
     }
@@ -47,7 +47,10 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("id", id)
 
         return try {
-            namedTemplate.queryForObject("SELECT * FROM recipe WHERE id = :id", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("""
+                SELECT * FROM recipe
+                WHERE id = :id
+            """.trimIndent(), parameterSource) { rs, _ ->
                 mapToRecipe(rs)
             }
         } catch (exception: DataAccessException) {
@@ -88,7 +91,10 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("id", id)
 
-        return namedTemplate.update("DELETE FROM recipe WHERE id = :id", parameterSource)
+        return namedTemplate.update("""
+            DELETE FROM recipe
+            WHERE id = :id
+        """.trimIndent(), parameterSource)
     }
 
     fun deleteRecipesForRecipeList(recipeListId: Long): Int {
@@ -96,11 +102,10 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_list_id", recipeListId)
 
-        return namedTemplate.update(
-                "DELETE FROM recipe " +
-                        "WHERE recipe_list_id = :recipe_list_id",
-                parameterSource
-        )
+        return namedTemplate.update("""
+            DELETE FROM recipe
+            WHERE recipe_list_id = :recipe_list_id
+        """.trimIndent(), parameterSource)
     }
 
     private fun mapToRecipe(rs: ResultSet): Recipe {
