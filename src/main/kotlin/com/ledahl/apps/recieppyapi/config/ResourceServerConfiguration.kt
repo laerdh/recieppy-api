@@ -1,8 +1,10 @@
 package com.ledahl.apps.recieppyapi.config
 
+import org.springframework.context.annotation.Bean
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+import org.springframework.web.filter.CommonsRequestLoggingFilter
 
 @EnableWebSecurity
 class ResourceServerConfiguration: WebSecurityConfigurerAdapter() {
@@ -16,5 +18,15 @@ class ResourceServerConfiguration: WebSecurityConfigurerAdapter() {
                 ?.and()
                 ?.oauth2ResourceServer()
                 ?.jwt()
+    }
+
+    @Bean
+    fun requestLoggingFilter(): CommonsRequestLoggingFilter {
+        val loggingFilter = CommonsRequestLoggingFilter()
+        loggingFilter.setIncludeClientInfo(true)
+        loggingFilter.setIncludeHeaders(true)
+        loggingFilter.setIncludePayload(true)
+        loggingFilter.setIncludeQueryString(true)
+        return loggingFilter
     }
 }

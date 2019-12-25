@@ -11,6 +11,10 @@ graphql:
     enabled: true
     corsEnabled: true
 
+logging:
+  level:
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+
 ---
 
 spring:
