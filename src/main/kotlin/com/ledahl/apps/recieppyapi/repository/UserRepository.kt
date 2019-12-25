@@ -24,40 +24,19 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getUserById(id: Long): User? {
+    fun getUserBySubject(subject: String): User? {
         val namedJdbcTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameters = MapSqlParameterSource()
-        parameters.addValue("id", id)
+        parameters.addValue("subject", subject)
 
         return try {
             namedJdbcTemplate.queryForObject("""
-                SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.external_id, r.name
+                SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.subject, r.name AS user_role
                 FROM user_account u
                 INNER JOIN user_role ur ON u.id = ur.user_id
                 INNER JOIN role r ON ur.role_id = r.id
-                WHERE id = :id
-            """.trimIndent(), parameters) { rs, _ ->
-                mapToUser(rs)
-            }
-        } catch (exception: DataAccessException) {
-            null
-        }
-    }
-
-    fun getUserByExternalId(externalId: String): User? {
-        val namedJdbcTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-
-        val parameters = MapSqlParameterSource()
-        parameters.addValue("external_id", externalId)
-
-        return try {
-            namedJdbcTemplate.queryForObject("""
-                SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.external_id, r.name AS user_role
-                FROM user_account u
-                INNER JOIN user_role ur ON u.id = ur.user_id
-                INNER JOIN role r ON ur.role_id = r.id
-                WHERE u.external_id = :external_id
+                WHERE u.subject = :subject
             """.trimIndent(), parameters) { rs, _ ->
                 mapToUser(rs)
             }
@@ -72,7 +51,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 .usingGeneratedKeyColumns("id")
 
         val parameters = HashMap<String, Any?>()
-        parameters["external_id"] = user.externalId
+        parameters["subject"] = user.subject
         parameters["first_name"] = user.firstName
         parameters["last_name"] = user.lastName
         parameters["email"] = user.email
@@ -130,7 +109,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     private fun mapToUser(rs: ResultSet): User? {
         return User(
                 id = rs.getLong("id"),
-                externalId = rs.getString("external_id") ?: "",
+                subject = rs.getString("subject") ?: "",
                 firstName = rs.getString("first_name"),
                 lastName = rs.getString("last_name"),
                 email = rs.getString("email"),

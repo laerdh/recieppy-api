@@ -7,8 +7,6 @@ import com.ledahl.apps.recieppyapi.model.input.UserInput
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import graphql.GraphQLException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.security.core.Authentication
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.stereotype.Service
 
 @Service
@@ -20,27 +18,8 @@ class UserService(@Autowired private val userRepository: UserRepository) {
         return userRepository.getUsers()
     }
 
-    fun handleUserAuthentication(authentication: Authentication): User {
-        val auth = authentication as? JwtAuthenticationToken ?: throw NotAuthorizedException("User not authorized")
-        val claims = auth.token.claims
-
-        val externalId = claims["sub"] as String
-        userRepository.getUserByExternalId(externalId)?.let { return it }
-
-        val firstName = claims["given_name"] as String
-        val lastName = claims["family_name"] as String
-        val email = claims["email"] as String
-
-        val userFromIdToken = User(
-                id = 0L,
-                externalId = externalId,
-                firstName = firstName,
-                lastName = lastName,
-                phoneNumber = "",
-                email = email
-        )
-
-        return createUser(userFromIdToken).copy(firstLogin = true)
+    fun getUserBySubject(subject: String): User? {
+        return userRepository.getUserBySubject(subject)
     }
 
     fun createUser(user: User): User {
