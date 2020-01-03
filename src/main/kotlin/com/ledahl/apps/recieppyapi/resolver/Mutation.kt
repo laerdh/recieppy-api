@@ -67,30 +67,30 @@ class Mutation(@Autowired private val recipeService: RecipeService,
         return locationService.acceptInviteForUser(user, inviteCode)
     }
 
-    fun newRecipeEvent(locationId: Long, recipeEvent: RecipeEventInput, env: DataFetchingEnvironment): RecipePlan {
+    fun newRecipePlanEvent(locationId: Long, recipePlanEvent: RecipePlanEventInput, env: DataFetchingEnvironment): RecipePlan {
         val user = env.getContext<AuthContext>().user
-        return recipePlanService.createRecipeEvent(
+        return recipePlanService.createRecipePlanEvent(
                 user = user,
                 locationId = locationId,
-                recipeEvent = recipeEvent
+                recipePlanEvent = recipePlanEvent
         )
     }
 
-    fun updateRecipeEvent(locationId: Long, recipeEvent: RecipeEventInput, env: DataFetchingEnvironment): RecipePlan {
+    fun updateRecipePlanEvent(locationId: Long, recipePlanEvent: RecipePlanEventInput, env: DataFetchingEnvironment): RecipePlan {
         val user = env.getContext<AuthContext>().user
-        return recipePlanService.updateRecipeEvent(
+        return recipePlanService.updateRecipePlanEvent(
                 user = user,
                 locationId = locationId,
-                recipeEvent = recipeEvent
+                recipePlanEvent = recipePlanEvent
         )
     }
 
-    fun deleteRecipeEvent(locationId: Long, recipeEvent: RecipeEventInput, env: DataFetchingEnvironment): RecipePlan {
+    fun deleteRecipePlanEvent(locationId: Long, recipePlanEvent: RecipePlanEventInput, env: DataFetchingEnvironment): RecipePlan {
         val user = env.getContext<AuthContext>().user
-        return recipePlanService.deleteRecipeEvent(
+        return recipePlanService.deleteRecipePlanEvent(
                 user = user,
                 locationId = locationId,
-                recipeEvent = recipeEvent
+                recipePlanEvent = recipePlanEvent
         )
     }
 }

@@ -3,10 +3,7 @@ package com.ledahl.apps.recieppyapi.resolver
 import com.coxautodev.graphql.tools.GraphQLQueryResolver
 import com.ledahl.apps.recieppyapi.auth.context.AuthContext
 import com.ledahl.apps.recieppyapi.model.*
-import com.ledahl.apps.recieppyapi.service.LocationService
-import com.ledahl.apps.recieppyapi.service.RecipeListService
-import com.ledahl.apps.recieppyapi.service.RecipeService
-import com.ledahl.apps.recieppyapi.service.UserService
+import com.ledahl.apps.recieppyapi.service.*
 import graphql.schema.DataFetchingEnvironment
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -15,6 +12,7 @@ import org.springframework.stereotype.Component
 class Query(@Autowired private val userService: UserService,
             @Autowired private val recipeService: RecipeService,
             @Autowired private val recipeListService: RecipeListService,
+            @Autowired private val recipePlanService: RecipePlanService,
             @Autowired private val locationService: LocationService) : GraphQLQueryResolver {
 
     fun getUsers(env: DataFetchingEnvironment): List<User> {
@@ -59,5 +57,14 @@ class Query(@Autowired private val userService: UserService,
     fun getLocations(env: DataFetchingEnvironment): List<Location> {
         val user = env.getContext<AuthContext>().user
         return locationService.getLocations(user)
+    }
+
+    fun getRecipePlan(locationId: Long, weekNumber: Int, env: DataFetchingEnvironment): RecipePlan {
+        val user = env.getContext<AuthContext>().user
+        return recipePlanService.getRecipePlanForWeek(
+                user = user,
+                locationId = locationId,
+                weekNumber = weekNumber
+        )
     }
 }
