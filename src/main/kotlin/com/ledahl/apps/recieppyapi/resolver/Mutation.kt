@@ -23,7 +23,7 @@ class Mutation(@Autowired private val recipeService: RecipeService,
 
     fun deleteRecipeList(id: Long, env: DataFetchingEnvironment): Long {
         val user = env.getContext<AuthContext>().user
-        return recipeListService.deleteRecipeList(id = id, user = user)
+        return recipeListService.deleteRecipeList(recipeListId = id, user = user)
     }
 
     fun renameRecipeList(id: Long, newName: String, env: DataFetchingEnvironment): RecipeList? {

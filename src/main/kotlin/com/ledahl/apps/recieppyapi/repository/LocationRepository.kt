@@ -136,7 +136,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rs.getLong("id")
             }
         } catch (dae: DataAccessException) {
-            return 0
+            return null
         }
     }
 

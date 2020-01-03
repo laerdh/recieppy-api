@@ -4,6 +4,7 @@ import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
 import com.ledahl.apps.recieppyapi.model.RecipeList
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.RecipeListInput
+import com.ledahl.apps.recieppyapi.repository.LocationRepository
 import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
 import com.ledahl.apps.recieppyapi.repository.RecipeRepository
 import graphql.GraphQLException
@@ -13,7 +14,8 @@ import java.time.LocalDate
 
 @Service
 class RecipeListService(@Autowired private val recipeListRepository: RecipeListRepository,
-                        @Autowired private val recipeRepository: RecipeRepository) {
+                        @Autowired private val recipeRepository: RecipeRepository,
+                        @Autowired private val locationRepository: LocationRepository) {
     fun getRecipeList(id: Long, user: User?): RecipeList? {
         user ?: throw NotAuthorizedException()
         return recipeListRepository.getRecipeList(id = id, userId = user.id)
@@ -41,17 +43,27 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
         return null
     }
 
-    fun deleteRecipeList(id: Long, user: User?): Long {
+    fun deleteRecipeList(recipeListId: Long, user: User?): Long {
         user ?: throw NotAuthorizedException()
 
-        val deleted = recipeListRepository.deleteUserRecipeList(recipeListId = id, userId = user.id)
-        if (deleted == 0) {
-            throw GraphQLException("Recipe list (id: $id) not found")
+        val locationId = locationRepository.getLocationId(user.id, recipeListId)
+
+        if (locationId == null) {
+            throw GraphQLException("Could not delete recipelist: No location found for provided recipeListId and userId")
         }
 
-        recipeRepository.deleteRecipesForRecipeList(recipeListId = id)
-        recipeListRepository.delete(recipeListId = id)
-        return id
+        val locationRecipeListDeleted = recipeListRepository.deleteLocationRecipeList(
+                recipeListId = recipeListId,
+                locationId = locationId)
+
+        if (locationRecipeListDeleted == 0) {
+            throw GraphQLException("Recipe list (id: $recipeListId) not found")
+        }
+
+        recipeRepository.deleteRecipesForRecipeList(recipeListId = recipeListId)
+
+        recipeListRepository.deleteRecipeList(recipeListId = recipeListId)
+        return recipeListId
     }
 
     fun renameRecipeList(user: User?, recipeListId: Long, newName: String): RecipeList? {

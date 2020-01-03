@@ -15,13 +15,20 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getRecipesForUser(userId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", userId)
+        parameterSource.addValue("user_id", userId)
 
-        return namedTemplate.query("SELECT * " +
-                "FROM recipe " +
-                "INNER JOIN recipe_list rl on recipe.recipe_list_id = rl.id " +
-                "INNER JOIN user_recipe_list url on rl.id = url.recipe_list " +
-                "WHERE user_id = :id", parameterSource) { rs, _ ->
+        val query = """
+            SELECT
+	            DISTINCT ON (r.id) *
+            FROM
+	            recipe r
+	            INNER JOIN location_recipe_list lrl ON lrl.recipe_list_id = r.recipe_list_id
+	            INNER JOIN location_user_account lua ON lua.location_id = lrl.location_id
+            WHERE
+	            lua.user_account_id = 1;
+        """.trimIndent()
+
+        return namedTemplate.query(query, parameterSource) { rs, _ ->
             mapToRecipe(rs)
         }
     }
@@ -29,13 +36,16 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getRecipesForRecipeList(recipeListId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", recipeListId)
+        parameterSource.addValue("recipe_list_id", recipeListId)
 
         return namedTemplate.query("""
-            SELECT r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id
-            FROM recipe_list rl
-            INNER JOIN recipe r ON rl.id = r.recipe_list_id
-            WHERE rl.id = :id
+            SELECT 
+                r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id
+            FROM 
+                recipe_list rl
+                INNER JOIN recipe r ON r.recipe_list_id = rl.id 
+            WHERE 
+                rl.id = :recipe_list_id
         """.trimIndent(), parameterSource) { rs, _ ->
             mapToRecipe(rs)
         }
@@ -44,12 +54,16 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getRecipe(id: Long): Recipe? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
+        parameterSource.addValue("recipe_id", id)
 
         return try {
             namedTemplate.queryForObject("""
-                SELECT * FROM recipe
-                WHERE id = :id
+                SELECT 
+                    * 
+                FROM 
+                    recipe r
+                WHERE
+                    r.id = :recipe_id
             """.trimIndent(), parameterSource) { rs, _ ->
                 mapToRecipe(rs)
             }
@@ -89,11 +103,13 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun delete(id: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
+        parameterSource.addValue("recipe_id", id)
 
         return namedTemplate.update("""
-            DELETE FROM recipe
-            WHERE id = :id
+            DELETE FROM 
+                recipe r
+            WHERE 
+                r.id = :recipe_id
         """.trimIndent(), parameterSource)
     }
 
@@ -103,19 +119,21 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("recipe_list_id", recipeListId)
 
         return namedTemplate.update("""
-            DELETE FROM recipe
-            WHERE recipe_list_id = :recipe_list_id
+            DELETE FROM 
+                recipe r
+            WHERE 
+                r.recipe_list_id = :recipe_list_id
         """.trimIndent(), parameterSource)
     }
 
     private fun mapToRecipe(rs: ResultSet): Recipe {
         return Recipe(
-            id = rs.getLong("id"),
-            title = rs.getString("title"),
-            url = rs.getString("url"),
-            imageUrl = rs.getString("image_url"),
-            site = rs.getString("site"),
-            recipeListId = rs.getLong("recipe_list_id")
+                id = rs.getLong("id"),
+                title = rs.getString("title"),
+                url = rs.getString("url"),
+                imageUrl = rs.getString("image_url"),
+                site = rs.getString("site"),
+                recipeListId = rs.getLong("recipe_list_id")
         )
     }
 }

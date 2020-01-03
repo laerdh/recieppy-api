@@ -13,18 +13,24 @@ import java.util.*
 
 @Repository
 class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+    // TODO Rename "id" param to recipeListId or similar
     fun getRecipeList(id: Long, userId: Long): RecipeList? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
+        parameterSource.addValue("recipe_list_id", id)
         parameterSource.addValue("user_id", userId)
 
         return try {
             namedTemplate.queryForObject("""
-                SELECT *
-                FROM recipe_list
-                INNER JOIN user_recipe_list url on recipe_list.id = url.recipe_list
-                WHERE id = :id AND url.user_id = :user_id
+                SELECT
+	                *
+                FROM
+	                recipe_list rl
+                    INNER JOIN location_recipe_list lrl ON lrl.recipe_list_id = rl.id
+                    INNER JOIN location_user_account lua ON lua.location_id = lrl.location_id
+                WHERE
+                    rl.id = :recipe_list_id
+                    AND lua.user_account_id = :user_id
             """.trimIndent(), parameterSource) { rs, _ ->
                 mapToRecipeList(rs)
             }
@@ -48,8 +54,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             	INNER JOIN location_user_account lua ON lua.location_id = lrc.location_id
             WHERE
             	lua.user_account_id = :user_id
-            AND
-            	lrc.location_id = :location_id
+                AND lrc.location_id = :location_id
         """.trimIndent()
 
         return namedTemplate.query(query, parameterSource) { rs, _ ->
@@ -81,27 +86,31 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
     }
 
-    fun delete(recipeListId: Long): Int {
+    fun deleteRecipeList(recipeListId: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", recipeListId)
+        parameterSource.addValue("recipe_list_id", recipeListId)
 
         return namedTemplate.update("""
-            DELETE FROM recipe_list
-            WHERE id = :id
+            DELETE FROM 
+                recipe_list rl
+            WHERE 
+                rl.id = :recipe_list_id
         """.trimIndent(), parameterSource)
     }
 
-    fun deleteUserRecipeList(recipeListId: Long, userId: Long): Int {
+    fun deleteLocationRecipeList(recipeListId: Long, locationId: Int): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("recipe_list", recipeListId)
-        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_list_id", recipeListId)
+        parameterSource.addValue("location_id", locationId)
 
         return namedTemplate.update("""
-            DELETE FROM user_recipe_list
-            WHERE user_id = :user_id
-            AND recipe_list = :recipe_list
+            DELETE FROM 
+                location_recipe_list lrl
+            WHERE 
+                lrl.recipe_list_id = :recipe_list_id
+                AND lrl.location_id = :location_id
         """.trimIndent(), parameterSource)
     }
 
@@ -112,9 +121,12 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("new_name", newName)
 
         return namedTemplate.update("""
-                UPDATE recipe_list
-                SET name = :new_name
-                WHERE id = :recipe_list_id
+                UPDATE 
+                    recipe_list
+                SET 
+                    name = :new_name
+                WHERE 
+                    id = :recipe_list_id
             """.trimIndent(), parameterSource)
     }
 
