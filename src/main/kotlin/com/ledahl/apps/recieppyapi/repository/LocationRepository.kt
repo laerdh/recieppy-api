@@ -8,8 +8,9 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
-import java.lang.Exception
+import java.sql.ResultSet
 import java.util.*
+import kotlin.collections.HashMap
 
 @Repository
 class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
@@ -105,14 +106,33 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         """.trimIndent()
 
         return namedTemplate.query(query, parameterSource) { rs, _ ->
-            Location(
-                    id = rs.getLong("id"),
-                    name = rs.getString("name"),
-                    address = rs.getString("address"),
-                    owner = rs.getInt("created_by"),
-                    inviteCode = rs.getString("invite_code"),
-                    recipeLists = emptyList()
-            )
+            mapToLocation(rs)
+        }
+    }
+
+    fun getLocation(userId: Long, locationId: Long): Location? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameters = HashMap<String, Any>()
+        parameters["user_id"] = userId
+        parameters["location_id"] = locationId
+
+        val query = """
+            SELECT
+                *
+            FROM
+                location l
+            INNER JOIN
+                location_user_account lua ON lua.user_account_id = :user_id
+            WHERE
+                l.id = :location_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameters) { rs, _ ->
+                mapToLocation(rs)
+            }
+        } catch (exception: DataAccessException) {
+            null
         }
     }
 
@@ -167,5 +187,15 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         } catch (dae: DataAccessException) {
             return null
         }
+    }
+
+    private fun mapToLocation(rs: ResultSet): Location {
+        return Location(
+                id = rs.getLong("id"),
+                name = rs.getString("name"),
+                address = rs.getString("address"),
+                owner = rs.getInt("created_by"),
+                inviteCode = rs.getString("invite_code")
+        )
     }
 }

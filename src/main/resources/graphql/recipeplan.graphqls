@@ -1,0 +1,22 @@
+scalar Date
+
+type RecipePlan {
+    weekNumber: Int!
+    events: [RecipeEvent]!
+}
+
+type RecipeEvent {
+    recipe: Recipe!
+    date: Date!
+}
+
+input RecipeEventInput {
+    recipeId: ID!
+    date: Date!
+}
+
+extend type Mutation {
+    newRecipeEvent(locationId: ID!, recipeEvent: RecipeEventInput): RecipePlan
+    updateRecipeEvent(locationId: ID!, recipeEvent: RecipeEventInput): RecipePlan
+    deleteRecipeEvent(locationId: ID!, recipeEvent: RecipeEventInput): RecipePlan
+}

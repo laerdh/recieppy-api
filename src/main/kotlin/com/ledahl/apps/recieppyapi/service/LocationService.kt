@@ -5,15 +5,13 @@ import com.ledahl.apps.recieppyapi.model.Location
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.NewLocationInput
 import com.ledahl.apps.recieppyapi.repository.LocationRepository
-import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
 import graphql.GraphQLException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class LocationService(@Autowired private val locationRepository: LocationRepository,
-                      @Autowired private val recipeListRepository: RecipeListRepository) {
+class LocationService(@Autowired private val locationRepository: LocationRepository) {
     fun createNewLocation(newLocationInput: NewLocationInput, user: User?): Location? {
         val userId = user?.id ?: throw NotAuthorizedException()
 
@@ -33,8 +31,7 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
                         name = newLocationInput.name,
                         address = newLocationInput.address,
                         owner = userId.toInt(),
-                        inviteCode = inviteCode,
-                        recipeLists = emptyList())
+                        inviteCode = inviteCode)
             } else {
                 throw GraphQLException("Could not insert userId $userId to location ${newLocationInput.name}")
             }
@@ -79,14 +76,14 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         return userInserted.toInt() > 0
     }
 
+    fun getLocation(user: User?, locationId: Long): Location? {
+        val userId = user?.id ?: throw NotAuthorizedException()
+        return locationRepository.getLocation(userId = userId, locationId = locationId)
+    }
+
     fun getLocations(user: User?): List<Location> {
         val userId = user?.id ?: throw NotAuthorizedException()
-        val locations = locationRepository.getLocationsForUser(userId)
-
-        return locations.map { location ->
-            val recipeLists = recipeListRepository.getRecipeLists(userId = userId, locationId = location.id.toInt())
-            location.copy(recipeLists = recipeLists)
-        }
+        return locationRepository.getLocationsForUser(userId)
     }
 
     private fun createUniqueInviteCode(): String {

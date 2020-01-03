@@ -4,6 +4,7 @@ type Location {
     address: String
     owner: ID!
     recipeLists: [RecipeList]
+    recipePlan: RecipePlan
     inviteCode: String!
 }
 
