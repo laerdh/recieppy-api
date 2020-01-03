@@ -15,17 +15,26 @@ import java.time.temporal.WeekFields
 class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanRepository,
                         @Autowired private val locationService: LocationService) {
 
-    fun getRecipePlanForCurrentWeek(locationId: Long): RecipePlan {
+    fun getRecipePlanForWeek(user: User?, locationId: Long, weekNumber: Int): RecipePlan {
+        preConditionCheck(user = user, locationId = locationId)
+        return RecipePlan(locationId = locationId, weekNumber = weekNumber)
+    }
+
+    fun getRecipePlanForCurrentWeek(user: User?, locationId: Long): RecipePlan {
+        preConditionCheck(user = user, locationId = locationId)
         return getRecipePlan(locationId = locationId, date = LocalDate.now())
     }
 
-    fun getRecipeEventsByWeek(locationId: Long, weekNumber: Int): List<RecipeEvent> {
+    fun getRecipeEventsByWeek(user: User?, locationId: Long, weekNumber: Int): List<RecipeEvent> {
+        preConditionCheck(user = user, locationId = locationId)
         return recipePlanRepository.getRecipeEventsForWeek(locationId = locationId, weekNumber = weekNumber)
     }
 
     fun createRecipeEvent(user: User?, locationId: Long, recipeEvent: RecipeEventInput): RecipePlan {
         preConditionCheck(user = user, locationId = locationId)
+
         recipePlanRepository.createRecipeEvent(locationId = locationId, recipeEvent = recipeEvent)
+
         return getRecipePlan(locationId = locationId, date = recipeEvent.date)
     }
 

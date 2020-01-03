@@ -15,6 +15,10 @@ input RecipeEventInput {
     date: Date!
 }
 
+extend type Query {
+    recipePlan(locationId: ID!, weekNumber: Int!): RecipePlan
+}
+
 extend type Mutation {
     newRecipeEvent(locationId: ID!, recipeEvent: RecipeEventInput): RecipePlan
     updateRecipeEvent(locationId: ID!, recipeEvent: RecipeEventInput): RecipePlan
