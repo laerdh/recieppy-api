@@ -14,6 +14,7 @@ import com.ledahl.apps.recieppyapi.repository.TagRepository
 import graphql.GraphQLException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
 
 @Service
@@ -21,24 +22,28 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
                     @Autowired private val recipeListRepository: RecipeListRepository,
                     @Autowired private val tagRepository: TagRepository,
                     @Autowired private val locationRepository: LocationRepository) {
+
     private val logger = LoggerFactory.getLogger(RecipeService::class.java)
 
-    fun getRecipe(id: Long, user: User?): Recipe? {
-        user ?: throw NotAuthorizedException()
-        return recipeRepository.getRecipe(id)
+    @PreAuthorize("@authService.isRecipeInUsersLocation(#user, #recipeId)")
+    fun getRecipe(user: User, recipeId: Long): Recipe? {
+        return recipeRepository.getRecipe(recipeId)
     }
 
-    fun getRecipesForUser(user: User?): List<Recipe> {
-        user ?: throw NotAuthorizedException()
-        return recipeRepository.getRecipesForUser(user.id)
+    fun getRecipeForRecipePlan(recipeId: Long): Recipe? {
+        return recipeRepository.getRecipe(recipeId)
+    }
+
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun getRecipesForLocation(user: User, locationId: Long): List<Recipe> {
+        return recipeRepository.getRecipesForLocation(locationId = locationId)
     }
 
     fun getRecipesForRecipeList(recipeList: RecipeList): List<Recipe> {
         return recipeRepository.getRecipesForRecipeList(recipeList.id)
     }
 
-    fun getTags(user: User?): List<Tag> {
-        user ?: throw NotAuthorizedException()
+    fun getTags(): List<Tag> {
         return tagRepository.getTags()
     }
 
@@ -46,13 +51,9 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return tagRepository.getTagsForRecipe(recipeId)
     }
 
-    fun createRecipe(recipe: RecipeInput, user: User?): Recipe? {
-        user ?: throw NotAuthorizedException()
+    @PreAuthorize("@authService.isRecipeListInUsersLocation(#user, #recipe.recipeListId)")
+    fun createRecipe(user: User, recipe: RecipeInput): Recipe? {
         val locationId = locationRepository.getLocationId(user.id, recipe.recipeListId)
-
-        if (locationId == null) {
-            throw GraphQLException("No location for user with recipeListId")
-        }
 
         val noRecipeLists = recipeListRepository.getRecipeLists(user.id, locationId).none { it.id == recipe.recipeListId }
         if (noRecipeLists) {
@@ -78,9 +79,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return null
     }
 
-    fun createTag(tag: TagInput, user: User?): Tag? {
-        user ?: throw NotAuthorizedException()
-
+    fun createTag(tag: TagInput): Tag? {
         val newTag = Tag(text = tag.text)
         val newTagId = tagRepository.save(newTag)
         if (newTagId != 0) {
@@ -89,27 +88,23 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return null
     }
 
-    fun deleteRecipe(id: Long, user: User?): Long {
-        user ?: throw NotAuthorizedException()
-
-        val recipe = recipeRepository.getRecipe(id) ?: throw GraphQLException("Recipe with id: $id not found")
-
+    @PreAuthorize("@authService.isRecipeInUsersLocation(#user, #recipeId)")
+    fun deleteRecipe(user: User, recipeId: Long): Long {
+        val recipe = recipeRepository.getRecipe(recipeId) ?: throw GraphQLException("Recipe with id: $recipeId not found")
         val locationId = locationRepository.getLocationId(user.id, recipe.recipeListId)
-                ?: throw GraphQLException("No location for userId ${user.id} with recipeListId ${recipe.recipeListId}")
-
         val usersRecipeLists = recipeListRepository.getRecipeLists(user.id, locationId)
 
         val userIsOwner = usersRecipeLists.any { it.id == recipe.recipeListId }
         if (!userIsOwner) {
-            logger.info("User (id: {}) tried to delete other users recipe (id: {})", user.id, id)
-            throw NotAuthorizedException("User is not owner of recipe list (id: $id)")
+            logger.info("User (id: {}) tried to delete other users recipe (id: {})", user.id, recipeId)
+            throw NotAuthorizedException("User is not owner of recipe list (id: $recipeId)")
         }
 
-        val deleted = recipeRepository.delete(id)
+        val deleted = recipeRepository.delete(recipeId)
         if (deleted == 0) {
-            throw GraphQLException("Recipe (id: $id) not found")
+            throw GraphQLException("Recipe (id: $recipeId) not found")
         }
 
-        return id
+        return recipeId
     }
 }

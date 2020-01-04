@@ -70,25 +70,6 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
     }
 
-    fun update(user: User): Int? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", user.id)
-        parameterSource.addValue("first_name", user.firstName)
-        parameterSource.addValue("last_name", user.lastName)
-        parameterSource.addValue("email", user.email)
-
-        return try {
-            namedTemplate.update("""
-                UPDATE user_account
-                SET first_name = :first_name, last_name = :last_name, email = :email
-                WHERE id = :id
-            """.trimIndent(), parameterSource)
-        } catch (exception: DataAccessException) {
-            null
-        }
-    }
-
     fun savePushToken(pushToken: String?, id: Long): Int? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()

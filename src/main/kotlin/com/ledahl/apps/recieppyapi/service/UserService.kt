@@ -3,7 +3,6 @@ package com.ledahl.apps.recieppyapi.service
 import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.enums.UserRole
-import com.ledahl.apps.recieppyapi.model.input.UserInput
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import graphql.GraphQLException
 import org.springframework.beans.factory.annotation.Autowired
@@ -11,8 +10,8 @@ import org.springframework.stereotype.Service
 
 @Service
 class UserService(@Autowired private val userRepository: UserRepository) {
-    fun getUsers(user: User?): List<User> {
-        if (user?.role != UserRole.ADMIN) {
+    fun getUsers(user: User): List<User> {
+        if (user.role != UserRole.ADMIN) {
             throw NotAuthorizedException()
         }
         return userRepository.getUsers()
@@ -28,20 +27,7 @@ class UserService(@Autowired private val userRepository: UserRepository) {
         return user.copy(id = newUserId)
     }
 
-    fun updateUser(updatedUser: UserInput, user: User?): User {
-        user ?: throw NotAuthorizedException()
-
-        val userToUpdate = user.copy(
-                firstName = updatedUser.firstName,
-                lastName = updatedUser.lastName,
-                email = updatedUser.email
-        )
-        userRepository.update(userToUpdate)
-        return userToUpdate
-    }
-
-    fun savePushToken(pushToken: String?, user: User?): Int? {
-        user ?: throw NotAuthorizedException()
+    fun savePushToken(pushToken: String?, user: User): Int? {
         val tokenSaved = userRepository.savePushToken(pushToken, user.id)
 
         if (tokenSaved == null) {

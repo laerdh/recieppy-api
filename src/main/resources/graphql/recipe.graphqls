@@ -8,8 +8,8 @@ type Recipe {
 }
 
 type Query {
-    recipe(id: ID): Recipe
-    recipes: [Recipe!]!
+    recipe(recipeId: ID!): Recipe
+    recipes(locationId: ID!): [Recipe!]!
 }
 
 input RecipeInput {

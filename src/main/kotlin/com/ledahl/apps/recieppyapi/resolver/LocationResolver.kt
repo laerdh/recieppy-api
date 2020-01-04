@@ -16,7 +16,7 @@ class LocationResolver(@Autowired private val recipeListService: RecipeListServi
                        @Autowired private val recipePlanService: RecipePlanService): GraphQLResolver<Location> {
     fun getRecipeLists(location: Location, env: DataFetchingEnvironment): List<RecipeList> {
         val user = env.getContext<AuthContext>().user
-        return recipeListService.getRecipeListsForUser(user = user, locationId = location.id.toInt())
+        return recipeListService.getRecipeListsForUser(user = user, locationId = location.id)
     }
 
     fun getRecipePlan(location: Location, env: DataFetchingEnvironment): RecipePlan {

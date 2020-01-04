@@ -1,6 +1,5 @@
 package com.ledahl.apps.recieppyapi.service
 
-import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
 import com.ledahl.apps.recieppyapi.model.Location
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.NewLocationInput
@@ -12,9 +11,8 @@ import java.util.*
 
 @Service
 class LocationService(@Autowired private val locationRepository: LocationRepository) {
-    fun createNewLocation(newLocationInput: NewLocationInput, user: User?): Location? {
-        val userId = user?.id ?: throw NotAuthorizedException()
-
+    fun createNewLocation(newLocationInput: NewLocationInput, user: User): Location? {
+        val userId = user.id
         val inviteCode = createUniqueInviteCode()
 
         val locationId = locationRepository.createNewLocation(newLocationInput.name,
@@ -50,10 +48,8 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         return locationRepository.addUserToLocation(userId, locationId)
     }
 
-    fun getInviteCode(user: User?): String {
-        val userId = user?.id ?: throw NotAuthorizedException()
-
-        val locations = locationRepository.getLocationsForUser(userId)
+    fun getInviteCode(user: User): String {
+        val locations = locationRepository.getLocationsForUser(user.id)
 
         if (locations.isEmpty()) {
             throw GraphQLException("User has no locations")
@@ -62,28 +58,24 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         return locations.first().inviteCode
     }
 
-    fun acceptInviteForUser(user: User?, inviteCode: String): Boolean {
-        val userId = user?.id ?: throw NotAuthorizedException()
-
+    fun acceptInviteForUser(user: User, inviteCode: String): Boolean {
         val locationIdForInviteCode = locationRepository.getLocationFromInviteCode(inviteCode)
 
         if (locationIdForInviteCode == null) {
             throw GraphQLException("Invite-code not valid")
         }
 
-        val userInserted = insertUserOnLocation(userId, locationIdForInviteCode)
+        val userInserted = insertUserOnLocation(user.id, locationIdForInviteCode)
 
         return userInserted.toInt() > 0
     }
 
-    fun getLocation(user: User?, locationId: Long): Location? {
-        val userId = user?.id ?: throw NotAuthorizedException()
-        return locationRepository.getLocation(userId = userId, locationId = locationId)
+    fun getLocation(user: User, locationId: Long): Location? {
+        return locationRepository.getLocation(userId = user.id, locationId = locationId)
     }
 
-    fun getLocations(user: User?): List<Location> {
-        val userId = user?.id ?: throw NotAuthorizedException()
-        return locationRepository.getLocationsForUser(userId)
+    fun getLocations(user: User): List<Location> {
+        return locationRepository.getLocationsForUser(user.id)
     }
 
     private fun createUniqueInviteCode(): String {
