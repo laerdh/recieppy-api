@@ -121,8 +121,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 *
             FROM
                 location l
-            INNER JOIN
-                location_user_account lua ON lua.user_account_id = :user_id
+                INNER JOIN location_user_account lua ON lua.user_account_id = :user_id
             WHERE
                 l.id = :location_id
         """.trimIndent()

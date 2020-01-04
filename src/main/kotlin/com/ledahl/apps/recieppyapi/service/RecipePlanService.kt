@@ -1,10 +1,10 @@
 package com.ledahl.apps.recieppyapi.service
 
 import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
-import com.ledahl.apps.recieppyapi.model.RecipeEvent
+import com.ledahl.apps.recieppyapi.model.RecipePlanEvent
 import com.ledahl.apps.recieppyapi.model.RecipePlan
 import com.ledahl.apps.recieppyapi.model.User
-import com.ledahl.apps.recieppyapi.model.input.RecipeEventInput
+import com.ledahl.apps.recieppyapi.model.input.RecipePlanEventInput
 import com.ledahl.apps.recieppyapi.repository.RecipePlanRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -25,49 +25,49 @@ class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanR
         return getRecipePlan(locationId = locationId, date = LocalDate.now())
     }
 
-    fun getRecipeEventsByWeek(user: User?, locationId: Long, weekNumber: Int): List<RecipeEvent> {
+    fun getRecipePlanEventsByWeek(user: User?, locationId: Long, weekNumber: Int): List<RecipePlanEvent> {
         preConditionCheck(user = user, locationId = locationId)
-        return recipePlanRepository.getRecipeEventsForWeek(locationId = locationId, weekNumber = weekNumber)
+        return recipePlanRepository.getRecipePlanEventsForWeek(locationId = locationId, weekNumber = weekNumber)
     }
 
-    fun createRecipeEvent(user: User?, locationId: Long, recipeEvent: RecipeEventInput): RecipePlan {
+    fun createRecipePlanEvent(user: User?, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
         preConditionCheck(user = user, locationId = locationId)
 
-        recipePlanRepository.createRecipeEvent(locationId = locationId, recipeEvent = recipeEvent)
+        recipePlanRepository.createRecipePlanEvent(locationId = locationId, recipePlanEvent = recipePlanEvent)
 
-        return getRecipePlan(locationId = locationId, date = recipeEvent.date)
+        return getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
     }
 
-    fun updateRecipeEvent(user: User?, locationId: Long, recipeEvent: RecipeEventInput): RecipePlan {
+    fun updateRecipePlanEvent(user: User?, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
         preConditionCheck(user = user, locationId = locationId)
 
-        val recipePlan = getRecipePlan(locationId = locationId, date = recipeEvent.date)
+        val recipePlan = getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
 
-        val existingRecipeEventsForWeek = recipePlanRepository.getRecipeEventsForWeek(
+        val existingRecipePlanEventsForWeek = recipePlanRepository.getRecipePlanEventsForWeek(
                 locationId = locationId,
                 weekNumber = recipePlan.weekNumber
         )
-        val existingRecipeEvent = existingRecipeEventsForWeek.find { it.recipeId == recipeEvent.recipeId }
+        val existingRecipePlanEvent = existingRecipePlanEventsForWeek.find { it.recipeId == recipePlanEvent.recipeId }
                 ?: throw IllegalArgumentException("Recipe does not exist")
 
-        val recipeEvents = HashMap<Long, List<LocalDate>>()
+        val recipePlanEvents = HashMap<Long, List<LocalDate>>()
 
-        existingRecipeEventsForWeek.find { it.date == recipeEvent.date }?.let {
-            recipeEvents[it.recipeId] = listOf(it.date, existingRecipeEvent.date)
+        existingRecipePlanEventsForWeek.find { it.date == recipePlanEvent.date }?.let {
+            recipePlanEvents[it.recipeId] = listOf(it.date, existingRecipePlanEvent.date)
         }
-        recipeEvents[recipeEvent.recipeId] = listOf(existingRecipeEvent.date, recipeEvent.date)
+        recipePlanEvents[recipePlanEvent.recipeId] = listOf(existingRecipePlanEvent.date, recipePlanEvent.date)
 
-        recipePlanRepository.updateRecipeEvent(locationId = locationId, recipeEvents = recipeEvents)
+        recipePlanRepository.updateRecipePlanEvent(locationId = locationId, recipePlanEvents = recipePlanEvents)
 
         return recipePlan
     }
 
-    fun deleteRecipeEvent(user: User?, locationId: Long, recipeEvent: RecipeEventInput): RecipePlan {
+    fun deleteRecipePlanEvent(user: User?, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
         preConditionCheck(user = user, locationId = locationId)
 
-        recipePlanRepository.deleteRecipeEvent(locationId = locationId, recipeEvent = recipeEvent)
+        recipePlanRepository.deleteRecipePlanEvent(locationId = locationId, recipePlanEvent = recipePlanEvent)
 
-        return getRecipePlan(locationId = locationId, date = recipeEvent.date)
+        return getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
     }
 
     private fun getRecipePlan(locationId: Long, date: LocalDate): RecipePlan {

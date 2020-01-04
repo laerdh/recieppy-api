@@ -1,7 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
-import com.ledahl.apps.recieppyapi.model.RecipeEvent
-import com.ledahl.apps.recieppyapi.model.input.RecipeEventInput
+import com.ledahl.apps.recieppyapi.model.RecipePlanEvent
+import com.ledahl.apps.recieppyapi.model.input.RecipePlanEventInput
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -16,22 +16,28 @@ import java.time.LocalDate
 
 @Repository
 class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
-    fun getRecipeEventsForWeek(locationId: Long, weekNumber: Int): List<RecipeEvent> {
+    fun getRecipePlanEventsForWeek(locationId: Long, weekNumber: Int): List<RecipePlanEvent> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameters = MapSqlParameterSource()
         parameters["location_id"] = locationId
         parameters["week_number"] = weekNumber
 
-        return try {
-            namedTemplate.query("""
-                SELECT lrp.date, lrp.recipe_id
-                FROM location_recipe_plan lrp
+        val query = """
+            SELECT
+                lrp.date, lrp.recipe_id
+            FROM
+                location_recipe_plan lrp
                 INNER JOIN location l ON l.id = lrp.location_id
-                WHERE EXTRACT(WEEK FROM lrp.date) = :week_number
-                ORDER BY lrp.date
-            """.trimIndent(), parameters) { rs, _ ->
-                RecipeEvent(
+            WHERE
+                EXTRACT(WEEK FROM lrp.date) = :week_number
+            ORDER BY
+                lrp.date
+        """.trimIndent()
+
+        return try {
+            namedTemplate.query(query, parameters) { rs, _ ->
+                RecipePlanEvent(
                         date = rs.getDate("date").toLocalDate(),
                         recipeId = rs.getLong("recipe_id")
                 )
@@ -41,58 +47,70 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun createRecipeEvent(locationId: Long, recipeEvent: RecipeEventInput): Boolean {
+    fun createRecipePlanEvent(locationId: Long, recipePlanEvent: RecipePlanEventInput): Boolean {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("location_recipe_plan")
 
         val parameters = MapSqlParameterSource()
         parameters["location_id"] = locationId
-        parameters["date"] = recipeEvent.date
-        parameters["recipe_id"] = recipeEvent.recipeId
+        parameters["date"] = recipePlanEvent.date
+        parameters["recipe_id"] = recipePlanEvent.recipeId
 
         return simpleJdbcInsert.execute(parameters) > 0
     }
 
-    fun updateRecipeEvent(locationId: Long,
-                          recipeEvents: Map<Long, List<LocalDate>>): Boolean {
+    fun updateRecipePlanEvent(locationId: Long,
+                              recipePlanEvents: Map<Long, List<LocalDate>>): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
-        val parameterList = Array<SqlParameterSource>(recipeEvents.size) {
+        val parameterList = Array<SqlParameterSource>(recipePlanEvents.size) {
             val parameters = MapSqlParameterSource()
-            val recipeId = recipeEvents.keys.elementAt(it)
+            val recipeId = recipePlanEvents.keys.elementAt(it)
             parameters["location_id"] = locationId
             parameters["recipe_id"] = recipeId
-            parameters["old_date"] = recipeEvents[recipeId]!!.first()
-            parameters["new_date"] = recipeEvents[recipeId]!!.last()
+            parameters["old_date"] = recipePlanEvents[recipeId]?.first() ?: LocalDate.now()
+            parameters["new_date"] = recipePlanEvents[recipeId]?.last() ?: LocalDate.now()
             parameters
         }
 
-        return try {
-            val updatedRows = namedTemplate.batchUpdate("""
-                UPDATE location_recipe_plan
-                SET date = :new_date
-                WHERE recipe_id = :recipe_id AND location_id = :location_id AND date = :old_date
-            """.trimIndent(), parameterList)
+        val query = """
+            UPDATE
+                location_recipe_plan
+            SET
+                date = :new_date
+            WHERE
+                recipe_id = :recipe_id
+                AND location_id = :location_id
+                AND date = :old_date
+        """.trimIndent()
 
-            return updatedRows.size == recipeEvents.size
+        return try {
+            val updatedRows = namedTemplate.batchUpdate(query, parameterList)
+            return updatedRows.size == recipePlanEvents.size
         } catch (exception: DataAccessException) {
             false
         }
     }
 
-    fun deleteRecipeEvent(locationId: Long, recipeEvent: RecipeEventInput): Boolean {
+    fun deleteRecipePlanEvent(locationId: Long, recipePlanEvent: RecipePlanEventInput): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameters = MapSqlParameterSource()
-        parameters["recipe_id"] = recipeEvent.recipeId
+        parameters["recipe_id"] = recipePlanEvent.recipeId
         parameters["location_id"] = locationId
-        parameters["date"] = Date.valueOf(recipeEvent.date)
+        parameters["date"] = Date.valueOf(recipePlanEvent.date)
+
+        val query = """
+            DELETE FROM
+                location_recipe_plan
+            WHERE
+                recipe_id = :recipe_id
+                AND location_id = :location_id
+                AND date = :date
+        """.trimIndent()
 
         return try {
-            val deleted = namedTemplate.update("""
-                DELETE FROM location_recipe_plan
-                WHERE recipe_id = :recipe_id AND location_id = :location_id AND date = :date
-            """.trimIndent(), parameters)
+            val deleted = namedTemplate.update(query, parameters)
             return deleted > 0
         } catch (exception: DataAccessException) {
             false

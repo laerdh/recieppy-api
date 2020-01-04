@@ -2,15 +2,15 @@ scalar Date
 
 type RecipePlan {
     weekNumber: Int!
-    events: [RecipeEvent]!
+    events: [RecipePlanEvent]!
 }
 
-type RecipeEvent {
+type RecipePlanEvent {
     recipe: Recipe!
     date: Date!
 }
 
-input RecipeEventInput {
+input RecipePlanEventInput {
     recipeId: ID!
     date: Date!
 }
@@ -20,7 +20,7 @@ extend type Query {
 }
 
 extend type Mutation {
-    newRecipeEvent(locationId: ID!, recipeEvent: RecipeEventInput): RecipePlan
-    updateRecipeEvent(locationId: ID!, recipeEvent: RecipeEventInput): RecipePlan
-    deleteRecipeEvent(locationId: ID!, recipeEvent: RecipeEventInput): RecipePlan
+    newRecipePlanEvent(locationId: ID!, recipePlanEvent: RecipePlanEventInput): RecipePlan
+    updateRecipePlanEvent(locationId: ID!, recipePlanEvent: RecipePlanEventInput): RecipePlan
+    deleteRecipePlanEvent(locationId: ID!, recipePlanEvent: RecipePlanEventInput): RecipePlan
 }
