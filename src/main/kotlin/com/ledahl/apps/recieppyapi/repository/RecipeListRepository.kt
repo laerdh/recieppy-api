@@ -39,7 +39,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getRecipeLists(userId: Long, locationId: Int): List<RecipeList> {
+    fun getRecipeLists(userId: Long, locationId: Long): List<RecipeList> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("user_id", userId)
@@ -99,7 +99,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         """.trimIndent(), parameterSource)
     }
 
-    fun deleteLocationRecipeList(recipeListId: Long, locationId: Int): Int {
+    fun deleteLocationRecipeList(recipeListId: Long, locationId: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_list_id", recipeListId)

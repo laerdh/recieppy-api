@@ -24,29 +24,23 @@ class Query(@Autowired private val userService: UserService,
         return env.getContext<AuthContext>().user
     }
 
-    fun getRecipe(id: Long, env: DataFetchingEnvironment): Recipe? {
+    fun getRecipes(locationId: Long, env: DataFetchingEnvironment): List<Recipe> {
         val user = env.getContext<AuthContext>().user
-        return recipeService.getRecipe(id = id, user = user)
-    }
-
-    fun getRecipes(env: DataFetchingEnvironment): List<Recipe> {
-        val user = env.getContext<AuthContext>().user
-        return recipeService.getRecipesForUser(user)
+        return recipeService.getRecipesForLocation(user = user, locationId = locationId)
     }
 
     fun getRecipeList(id: Long, env: DataFetchingEnvironment): RecipeList? {
         val user = env.getContext<AuthContext>().user
-        return recipeListService.getRecipeList(id = id, user = user)
+        return recipeListService.getRecipeList(user = user, id = id)
     }
 
-    fun getRecipeLists(locationId: Int, env: DataFetchingEnvironment): List<RecipeList> {
+    fun getRecipeLists(locationId: Long, env: DataFetchingEnvironment): List<RecipeList> {
         val user = env.getContext<AuthContext>().user
         return recipeListService.getRecipeListsForUser(user, locationId)
     }
 
     fun getTags(env: DataFetchingEnvironment): List<Tag> {
-        val user = env.getContext<AuthContext>().user
-        return recipeService.getTags(user)
+        return recipeService.getTags()
     }
 
     fun getInviteCode(env: DataFetchingEnvironment): String {

@@ -19,12 +19,12 @@ class Mutation(@Autowired private val recipeService: RecipeService,
 
     fun newRecipeList(recipeList: RecipeListInput, env: DataFetchingEnvironment): RecipeList? {
         val user = env.getContext<AuthContext>().user
-        return recipeListService.createRecipeList(recipeList = recipeList, user = user)
+        return recipeListService.createRecipeList(user = user, recipeList = recipeList)
     }
 
     fun deleteRecipeList(id: Long, env: DataFetchingEnvironment): Long {
         val user = env.getContext<AuthContext>().user
-        return recipeListService.deleteRecipeList(recipeListId = id, user = user)
+        return recipeListService.deleteRecipeList(user = user, recipeListId = id)
     }
 
     fun renameRecipeList(id: Long, newName: String, env: DataFetchingEnvironment): RecipeList? {
@@ -34,22 +34,17 @@ class Mutation(@Autowired private val recipeService: RecipeService,
 
     fun newRecipe(recipe: RecipeInput, env: DataFetchingEnvironment): Recipe? {
         val user = env.getContext<AuthContext>().user
-        return recipeService.createRecipe(recipe = recipe, user = user)
+        return recipeService.createRecipe(user = user, recipe = recipe)
     }
 
     fun deleteRecipe(id: Long, env: DataFetchingEnvironment): Long? {
         val user = env.getContext<AuthContext>().user
-        return recipeService.deleteRecipe(id = id, user = user)
+        return recipeService.deleteRecipe(user = user, recipeId = id)
     }
 
     fun newTag(tag: TagInput, env: DataFetchingEnvironment): Tag? {
         val user = env.getContext<AuthContext>().user
-        return recipeService.createTag(tag = tag, user = user)
-    }
-
-    fun updateUser(user: UserInput, env: DataFetchingEnvironment): User {
-        val existingUser = env.getContext<AuthContext>().user
-        return userService.updateUser(updatedUser = user, user = existingUser)
+        return recipeService.createTag(tag = tag)
     }
 
     fun savePushToken(pushToken: String?, env: DataFetchingEnvironment): Int? {

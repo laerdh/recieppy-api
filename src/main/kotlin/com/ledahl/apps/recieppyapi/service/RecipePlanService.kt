@@ -1,46 +1,40 @@
 package com.ledahl.apps.recieppyapi.service
 
-import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
-import com.ledahl.apps.recieppyapi.model.RecipePlanEvent
 import com.ledahl.apps.recieppyapi.model.RecipePlan
+import com.ledahl.apps.recieppyapi.model.RecipePlanEvent
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.RecipePlanEventInput
 import com.ledahl.apps.recieppyapi.repository.RecipePlanRepository
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.temporal.WeekFields
 
 @Service
-class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanRepository,
-                        @Autowired private val locationService: LocationService) {
+class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanRepository) {
 
-    fun getRecipePlanForWeek(user: User?, locationId: Long, weekNumber: Int): RecipePlan {
-        preConditionCheck(user = user, locationId = locationId)
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun getRecipePlanForWeek(user: User, locationId: Long, weekNumber: Int): RecipePlan {
         return RecipePlan(locationId = locationId, weekNumber = weekNumber)
     }
 
-    fun getRecipePlanForCurrentWeek(user: User?, locationId: Long): RecipePlan {
-        preConditionCheck(user = user, locationId = locationId)
+    fun getRecipePlanForCurrentWeek(user: User, locationId: Long): RecipePlan {
         return getRecipePlan(locationId = locationId, date = LocalDate.now())
     }
 
-    fun getRecipePlanEventsByWeek(user: User?, locationId: Long, weekNumber: Int): List<RecipePlanEvent> {
-        preConditionCheck(user = user, locationId = locationId)
+    fun getRecipePlanEventsByWeek(user: User, locationId: Long, weekNumber: Int): List<RecipePlanEvent> {
         return recipePlanRepository.getRecipePlanEventsForWeek(locationId = locationId, weekNumber = weekNumber)
     }
 
-    fun createRecipePlanEvent(user: User?, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
-        preConditionCheck(user = user, locationId = locationId)
-
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun createRecipePlanEvent(user: User, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
         recipePlanRepository.createRecipePlanEvent(locationId = locationId, recipePlanEvent = recipePlanEvent)
-
         return getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
     }
 
-    fun updateRecipePlanEvent(user: User?, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
-        preConditionCheck(user = user, locationId = locationId)
-
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun updateRecipePlanEvent(user: User, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
         val recipePlan = getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
 
         val existingRecipePlanEventsForWeek = recipePlanRepository.getRecipePlanEventsForWeek(
@@ -62,21 +56,14 @@ class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanR
         return recipePlan
     }
 
-    fun deleteRecipePlanEvent(user: User?, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
-        preConditionCheck(user = user, locationId = locationId)
-
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun deleteRecipePlanEvent(user: User, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
         recipePlanRepository.deleteRecipePlanEvent(locationId = locationId, recipePlanEvent = recipePlanEvent)
-
         return getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
     }
 
     private fun getRecipePlan(locationId: Long, date: LocalDate): RecipePlan {
         val weekNumber = date.get(WeekFields.ISO.weekOfWeekBasedYear())
         return RecipePlan(locationId = locationId, weekNumber = weekNumber)
-    }
-
-    private fun preConditionCheck(user: User?, locationId: Long) {
-        locationService.getLocation(user = user, locationId = locationId)
-                ?: throw NotAuthorizedException("User is not part of location")
     }
 }

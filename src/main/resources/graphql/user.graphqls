@@ -13,13 +13,6 @@ extend type Query {
     users: [User]!
 }
 
-input UserInput {
-    firstName: String!
-    lastName: String!
-    email: String
-}
-
 extend type Mutation {
-    updateUser(input: UserInput): User
     savePushToken(pushToken: String): ID
 }

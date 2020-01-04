@@ -12,20 +12,21 @@ import java.sql.ResultSet
 
 @Repository
 class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
-    fun getRecipesForUser(userId: Long): List<Recipe> {
+    fun getRecipesForLocation(locationId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("location_id", locationId)
 
         val query = """
             SELECT
-	            DISTINCT ON (r.id) *
+                r.id, r.title, r.url, r.image_url, r.site
             FROM
-	            recipe r
-	            INNER JOIN location_recipe_list lrl ON lrl.recipe_list_id = r.recipe_list_id
-	            INNER JOIN location_user_account lua ON lua.location_id = lrl.location_id
+                recipe r
+                INNER JOIN recipe_list rl ON r.recipe_list_id = rl.id
+                INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
             WHERE
-	            lua.user_account_id = 1;
+                lrl.location_id = :location_id
         """.trimIndent()
 
         return namedTemplate.query(query, parameterSource) { rs, _ ->
@@ -35,6 +36,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
     fun getRecipesForRecipeList(recipeListId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_list_id", recipeListId)
 
