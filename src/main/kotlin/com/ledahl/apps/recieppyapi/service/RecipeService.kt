@@ -51,26 +51,30 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return tagRepository.getTagsForRecipe(recipeId)
     }
 
-    @PreAuthorize("@authService.isRecipeListInUsersLocation(#user, #recipe.recipeListId)")
-    fun createRecipe(user: User, recipe: RecipeInput): Recipe? {
-        val locationId = locationRepository.getLocationId(user.id, recipe.recipeListId)
+    @PreAuthorize("@authService.isRecipeListInUsersLocation(#user, #recipeInput.recipeListId)")
+    fun createRecipe(user: User, recipeInput: RecipeInput): Recipe? {
+        val locationId = locationRepository.getLocationId(user.id, recipeInput.recipeListId)
 
-        val noRecipeLists = recipeListRepository.getRecipeLists(user.id, locationId).none { it.id == recipe.recipeListId }
+        val noRecipeLists = recipeListRepository
+                .getRecipeLists(user.id, locationId)
+                .none { it.id == recipeInput.recipeListId }
+
         if (noRecipeLists) {
             throw NotAuthorizedException("User does not subscribe to this recipelist")
         }
 
         val newRecipe = Recipe(
-                title = recipe.title,
-                url = recipe.url,
-                imageUrl = recipe.imageUrl,
-                site = recipe.site,
-                recipeListId = recipe.recipeListId
+                title = recipeInput.title,
+                url = recipeInput.url,
+                imageUrl = recipeInput.imageUrl,
+                site = recipeInput.site,
+                comment = recipeInput.comment,
+                recipeListId = recipeInput.recipeListId
         )
 
         val newRecipeId = recipeRepository.save(newRecipe)
         if (newRecipeId != 0) {
-            recipe.tags?.let {
+            recipeInput.tags?.let {
                 recipeRepository.saveTagsToRecipe(recipeId = newRecipeId.toLong(), tags = it)
             }
 

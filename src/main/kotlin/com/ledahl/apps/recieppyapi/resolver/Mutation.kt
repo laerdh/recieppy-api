@@ -32,9 +32,9 @@ class Mutation(@Autowired private val recipeService: RecipeService,
         return recipeListService.renameRecipeList(user = user, recipeListId = id, newName = newName)
     }
 
-    fun newRecipe(recipe: RecipeInput, env: DataFetchingEnvironment): Recipe? {
+    fun newRecipe(recipeInput: RecipeInput, env: DataFetchingEnvironment): Recipe? {
         val user = env.getContext<AuthContext>().user
-        return recipeService.createRecipe(user = user, recipe = recipe)
+        return recipeService.createRecipe(user = user, recipeInput = recipeInput)
     }
 
     fun deleteRecipe(id: Long, env: DataFetchingEnvironment): Long? {

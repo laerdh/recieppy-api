@@ -5,6 +5,7 @@ type Recipe {
     imageUrl: String
     site: String
     tags: [Tag]
+    comment: String
 }
 
 type Query {
@@ -19,6 +20,7 @@ input RecipeInput {
     site: String
     recipeListId: ID!
     tags: [ID]
+    comment: String
 }
 
 type Mutation {

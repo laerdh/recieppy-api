@@ -20,7 +20,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         val query = """
             SELECT
-                r.id, r.title, r.url, r.image_url, r.site
+                r.id, r.title, r.url, r.image_url, r.site, r.comment
             FROM
                 recipe r
                 INNER JOIN recipe_list rl ON r.recipe_list_id = rl.id
@@ -42,7 +42,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return namedTemplate.query("""
             SELECT 
-                r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id
+                r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id, r.comment
             FROM 
                 recipe_list rl
                 INNER JOIN recipe r ON r.recipe_list_id = rl.id 
@@ -85,6 +85,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameters["image_url"] = recipe.imageUrl
         parameters["site"] = recipe.site
         parameters["recipe_list_id"] = recipe.recipeListId
+        parameters["comment"] = recipe.comment
 
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
@@ -135,6 +136,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 url = rs.getString("url"),
                 imageUrl = rs.getString("image_url"),
                 site = rs.getString("site"),
+                comment = rs.getString("comment"),
                 recipeListId = rs.getLong("recipe_list_id")
         )
     }

@@ -5,4 +5,5 @@ data class Recipe(val id: Long = 0,
                   val url: String?,
                   val imageUrl: String?,
                   val site: String?,
+                  val comment: String?,
                   val recipeListId: Long)

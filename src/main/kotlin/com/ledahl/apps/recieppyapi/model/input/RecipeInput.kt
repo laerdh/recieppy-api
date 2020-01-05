@@ -5,4 +5,5 @@ data class RecipeInput(val title: String,
                        val imageUrl: String?,
                        val site: String?,
                        val recipeListId: Long,
-                       val tags: List<Long>?)
+                       val tags: List<Long>?,
+                       val comment: String?)
