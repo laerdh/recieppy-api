@@ -155,8 +155,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                val count = rs.getInt("count")
-                count > 0
+                rs.getInt("count") > 0
             } ?: false
         } catch (exception: DataAccessException) {
             false
@@ -185,8 +184,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                val count = rs.getInt("count")
-                count > 0
+                rs.getInt("count") > 0
             } ?: false
         } catch (exception: DataAccessException) {
             false
@@ -215,8 +213,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.queryForObject(query, parameters) { rs, _ ->
-                val count = rs.getInt("count")
-                count > 0
+                rs.getInt("count") > 0
             } ?: false
         } catch (exception: DataAccessException) {
             false

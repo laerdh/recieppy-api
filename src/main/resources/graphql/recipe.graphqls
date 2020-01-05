@@ -8,6 +8,7 @@ type Recipe {
 }
 
 type Query {
+    recipe(recipeId: ID!): Recipe
     recipes(locationId: ID!): [Recipe!]!
 }
 

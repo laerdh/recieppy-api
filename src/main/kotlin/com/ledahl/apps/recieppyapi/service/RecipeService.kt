@@ -25,7 +25,12 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     private val logger = LoggerFactory.getLogger(RecipeService::class.java)
 
-    fun getRecipe(recipeId: Long): Recipe? {
+    @PreAuthorize("@authService.isRecipeInUsersLocation(#user, #recipeId)")
+    fun getRecipe(user: User, recipeId: Long): Recipe? {
+        return recipeRepository.getRecipe(recipeId)
+    }
+
+    fun getRecipeForRecipePlan(recipeId: Long): Recipe? {
         return recipeRepository.getRecipe(recipeId)
     }
 

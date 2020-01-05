@@ -11,6 +11,6 @@ import org.springframework.stereotype.Component
 @Component
 class RecipePlanEventResolver(@Autowired private val recipeService: RecipeService): GraphQLResolver<RecipePlanEvent> {
     fun getRecipe(recipePlanEvent: RecipePlanEvent, env: DataFetchingEnvironment): Recipe? {
-        return recipeService.getRecipe(recipeId = recipePlanEvent.recipeId)
+        return recipeService.getRecipeForRecipePlan(recipeId = recipePlanEvent.recipeId)
     }
 }
