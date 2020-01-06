@@ -1,28 +1,18 @@
 package com.ledahl.apps.recieppyapi.auth.context
 
-import com.ledahl.apps.recieppyapi.service.TokenService
-import com.ledahl.apps.recieppyapi.model.User
-import com.ledahl.apps.recieppyapi.repository.UserRepository
+import com.ledahl.apps.recieppyapi.service.AuthService
 import graphql.servlet.DefaultGraphQLContextBuilder
 import graphql.servlet.GraphQLContext
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
 @Component
-class ContextBuilder(@Autowired private val userRepository: UserRepository,
-                     @Autowired private val tokenService: TokenService): DefaultGraphQLContextBuilder() {
+class ContextBuilder(@Autowired private val authService: AuthService): DefaultGraphQLContextBuilder() {
     override fun build(httpServletRequest: HttpServletRequest?): GraphQLContext {
-        val user: User? = httpServletRequest
-                ?.getHeader("Authorization")
-                ?.takeIf { it.isNotEmpty() }
-                ?.let {
-                    val user = userRepository.getUserFromToken(it)
-                    tokenService.verifyUserToken(user)
-                }
-
-        // Store user in current request so that we can validate token in SecurityQraphQLAspect
-        httpServletRequest?.setAttribute("USER", user)
+        val authentication = SecurityContextHolder.getContext().authentication
+        val user = authService.handleUserAuthentication(authentication)
 
         return AuthContext(request = httpServletRequest, user = user)
     }

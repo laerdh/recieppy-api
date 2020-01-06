@@ -7,14 +7,16 @@ type RecipeList {
 
 extend type Query {
     recipeList(id: ID): RecipeList
-    recipeLists: [RecipeList!]!
+    recipeLists(locationId: Int!): [RecipeList!]!
 }
 
 input RecipeListInput {
     name: String!
+    locationId: ID!
 }
 
 extend type Mutation {
     newRecipeList(input: RecipeListInput): RecipeList
     deleteRecipeList(id: ID!): ID!
+    renameRecipeList(id: ID!, newName: String!): RecipeList
 }

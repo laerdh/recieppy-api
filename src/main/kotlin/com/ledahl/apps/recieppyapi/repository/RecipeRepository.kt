@@ -9,34 +9,47 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
+import kotlin.collections.set
 
 @Repository
 class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
-    fun getRecipesForUser(userId: Long): List<Recipe> {
+    fun getRecipesForLocation(locationId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", userId)
 
-        return namedTemplate.query("SELECT * " +
-                "FROM recipe " +
-                "INNER JOIN recipe_list rl on recipe.recipe_list_id = rl.id " +
-                "INNER JOIN user_recipe_list url on rl.id = url.recipe_list " +
-                "WHERE user_id = :id", parameterSource) { rs, _ ->
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("location_id", locationId)
+
+        val query = """
+            SELECT
+                r.id, r.title, r.url, r.image_url, r.site, r.comment
+            FROM
+                recipe r
+                INNER JOIN recipe_list rl ON r.recipe_list_id = rl.id
+                INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
+            WHERE
+                lrl.location_id = :location_id
+        """.trimIndent()
+
+        return namedTemplate.query(query, parameterSource) { rs, _ ->
             mapToRecipe(rs)
         }
     }
 
     fun getRecipesForRecipeList(recipeListId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", recipeListId)
 
-        return namedTemplate.query(
-                "SELECT r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id " +
-                        "FROM recipe_list rl " +
-                        "INNER JOIN recipe r on rl.id = r.recipe_list_id " +
-                        "WHERE rl.id = :id",
-                parameterSource) { rs, _ ->
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_list_id", recipeListId)
+
+        return namedTemplate.query("""
+            SELECT 
+                r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id, r.comment
+            FROM 
+                recipe_list rl
+                INNER JOIN recipe r ON r.recipe_list_id = rl.id 
+            WHERE 
+                rl.id = :recipe_list_id
+        """.trimIndent(), parameterSource) { rs, _ ->
             mapToRecipe(rs)
         }
     }
@@ -44,10 +57,17 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getRecipe(id: Long): Recipe? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
+        parameterSource.addValue("recipe_id", id)
 
         return try {
-            namedTemplate.queryForObject("SELECT * FROM recipe WHERE id = :id", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("""
+                SELECT 
+                    * 
+                FROM 
+                    recipe r
+                WHERE
+                    r.id = :recipe_id
+            """.trimIndent(), parameterSource) { rs, _ ->
                 mapToRecipe(rs)
             }
         } catch (exception: DataAccessException) {
@@ -66,29 +86,50 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameters["image_url"] = recipe.imageUrl
         parameters["site"] = recipe.site
         parameters["recipe_list_id"] = recipe.recipeListId
+        parameters["comment"] = recipe.comment
 
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
 
-    fun saveTagsToRecipe(recipeId: Long, tags: List<Long>) {
-        tags.forEach { tagId ->
-            val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
-                    .withTableName("recipe_tag")
+    fun updateRecipe(recipe: Recipe): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
-            val parameters = HashMap<String, Any>()
-            parameters["recipe_id"] = recipeId
-            parameters["tag_id"] = tagId
+        val parameters = HashMap<String, Any?>()
+        parameters["recipe_id"] = recipe.id
+        parameters["title"] = recipe.title
+        parameters["url"] = recipe.url
+        parameters["image_url"] = recipe.imageUrl
+        parameters["site"] = recipe.site
+        parameters["recipe_list_id"] = recipe.recipeListId
+        parameters["comment"] = recipe.comment
 
-            simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
+        val query = """
+            UPDATE
+                recipe
+            SET
+                title = :title, url = :url, image_url = :image_url, site = :site, recipe_list_id = :recipe_list_id, comment = :comment
+            WHERE
+                id = :recipe_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.update(query, parameters)
+        } catch (exception: DataAccessException) {
+            0
         }
     }
 
     fun delete(id: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
+        parameterSource.addValue("recipe_id", id)
 
-        return namedTemplate.update("DELETE FROM recipe WHERE id = :id", parameterSource)
+        return namedTemplate.update("""
+            DELETE FROM 
+                recipe r
+            WHERE 
+                r.id = :recipe_id
+        """.trimIndent(), parameterSource)
     }
 
     fun deleteRecipesForRecipeList(recipeListId: Long): Int {
@@ -96,21 +137,23 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_list_id", recipeListId)
 
-        return namedTemplate.update(
-                "DELETE FROM recipe " +
-                        "WHERE recipe_list_id = :recipe_list_id",
-                parameterSource
-        )
+        return namedTemplate.update("""
+            DELETE FROM 
+                recipe r
+            WHERE 
+                r.recipe_list_id = :recipe_list_id
+        """.trimIndent(), parameterSource)
     }
 
     private fun mapToRecipe(rs: ResultSet): Recipe {
         return Recipe(
-            id = rs.getLong("id"),
-            title = rs.getString("title"),
-            url = rs.getString("url"),
-            imageUrl = rs.getString("image_url"),
-            site = rs.getString("site"),
-            recipeListId = rs.getLong("recipe_list_id")
+                id = rs.getLong("id"),
+                title = rs.getString("title"),
+                url = rs.getString("url"),
+                imageUrl = rs.getString("image_url"),
+                site = rs.getString("site"),
+                comment = rs.getString("comment"),
+                recipeListId = rs.getLong("recipe_list_id")
         )
     }
 }

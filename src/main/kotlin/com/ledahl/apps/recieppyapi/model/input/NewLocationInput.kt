@@ -1,6 +1,6 @@
 package com.ledahl.apps.recieppyapi.model.input
 
-data class RecipeListInput(
+data class NewLocationInput(
         val name: String,
-        val locationId: Int
+        val address: String?
 )

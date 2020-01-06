@@ -1,48 +1,48 @@
 package com.ledahl.apps.recieppyapi.service
 
-import com.google.firebase.auth.FirebaseAuth
-import com.ledahl.apps.recieppyapi.auth.model.AuthData
-import com.ledahl.apps.recieppyapi.auth.model.AuthResponse
-import com.ledahl.apps.recieppyapi.exception.NotAuthenticatedException
-import org.slf4j.LoggerFactory
+import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
+import com.ledahl.apps.recieppyapi.model.User
+import com.ledahl.apps.recieppyapi.repository.LocationRepository
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.Authentication
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.stereotype.Service
 
 @Service
-class AuthService(@Autowired private val firebaseAuth: FirebaseAuth,
-                  @Autowired private val tokenService: TokenService,
-                  @Autowired private val userService: UserService) {
-    private val logger = LoggerFactory.getLogger(AuthService::class.java)
+class AuthService(@Autowired private val userService: UserService,
+                  @Autowired private val locationRepository: LocationRepository) {
+    fun handleUserAuthentication(authentication: Authentication): User {
+        val auth = authentication as? JwtAuthenticationToken ?: throw NotAuthorizedException("User not authorized")
+        val claims = auth.token.claims
 
-    @Throws(NotAuthenticatedException::class)
-    fun authenticate(authData: AuthData): AuthResponse {
-        if (authData.phoneNumber.isNullOrEmpty() || authData.uid.isNullOrEmpty()) {
-            throw NotAuthenticatedException("Credentials must be provided")
-        }
+        val subject = claims["sub"] as String
+        userService.getUserBySubject(subject)?.let { return it }
 
-        try {
-            val firebaseUser = firebaseAuth.getUser(authData.uid)
-            if (firebaseUser.uid == null
-                    || firebaseUser.phoneNumber == null
-                    || authData.phoneNumber != firebaseUser.phoneNumber) {
-                throw NotAuthenticatedException("Phone number not found")
-            }
+        val firstName = claims["given_name"] as String
+        val lastName = claims["family_name"] as String
+        val email = claims["email"] as String
 
-            val existingUser = userService.getUserFromPhoneNumber(authData.phoneNumber)
-            val generatedToken = tokenService.generateToken(authData.phoneNumber)
+        val userFromIdToken = User(
+                id = 0L,
+                subject = subject,
+                firstName = firstName,
+                lastName = lastName,
+                phoneNumber = "",
+                email = email
+        )
 
-            if (existingUser == null) {
-                val newAuthenticatedUser = userService.createUser(phoneNumber = authData.phoneNumber, token = generatedToken)
-                logger.info("Created user with phone number: {}", authData.phoneNumber)
-                return AuthResponse(user = newAuthenticatedUser.copy(token = generatedToken), firstLogin = true)
-            }
+        return userService.createUser(userFromIdToken).copy(firstLogin = true)
+    }
 
-            val authenticatedUser = existingUser.copy(token = generatedToken)
-            userService.saveToken(authenticatedUser)
-            return AuthResponse(user = authenticatedUser)
-        } catch (exception: Exception) {
-            logger.info("Failed to authenticate user with phone number: {} and uid: {}", authData.phoneNumber, authData.uid)
-            throw NotAuthenticatedException("Authentication failed")
-        }
+    fun isMemberOfLocation(user: User, locationId: Long): Boolean {
+        return locationRepository.isUserMemberOfLocation(userId = user.id, locationId = locationId)
+    }
+
+    fun isRecipeListInUsersLocation(user: User, recipeListId: Long): Boolean {
+        return locationRepository.isRecipeListInUsersLocation(userId = user.id, recipeListId = recipeListId)
+    }
+
+    fun isRecipeInUsersLocation(user: User, recipeId: Long): Boolean {
+        return locationRepository.isRecipeInUsersLocation(userId = user.id, recipeId = recipeId)
     }
 }

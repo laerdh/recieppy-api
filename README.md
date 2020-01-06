@@ -1,6 +1,7 @@
+[![pipeline status](https://gitlab.com/laerdh/recieppy-api/badges/master/pipeline.svg)](https://gitlab.com/laerdh/recieppy-api/commits/master)
 # recieppy-api
 
-GraphQL API for the Recieppy mobile apps.
+GraphQL API (OAuth2 Resource Server) for the Recieppy mobile apps.
 
 ##### Tech stack:
 * Kotlin
@@ -8,19 +9,19 @@ GraphQL API for the Recieppy mobile apps.
 * PostgreSQL
 * Flyway
 * GraphQL java
-* JSON Web Token
 * Firebase Admin
 
 ### Get started
 
 ##### Set up local PostgreSQL database
 1. Configure a local PostgreSQL instance running on default port `5432`
-2. Set the follwing environment variables in your IDE to connect to local database instance:
-* `DATABASE_URL=<url>`
+2. Set the following environment variables in your IDE to connect to local database instance:
+* `SERVER_PORT=<PORT> (default is 8000)`
+* `DATABASE_URL=<URL>`
 * `DATABASE_USER=<username>`
 * `DATABASE_PASSWORD=<password>`
 * `DATABASE_SCHEMA=<schema name>`
-* `JWT_SECRET=<Generated secret>`
+* `OAUTH2_JWT_ENDPOINT=<URL>`
 
 This can easily be set up using Docker and Docker Compose.
 

@@ -13,17 +13,25 @@ import java.util.*
 
 @Repository
 class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+    // TODO Rename "id" param to recipeListId or similar
     fun getRecipeList(id: Long, userId: Long): RecipeList? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", id)
+        parameterSource.addValue("recipe_list_id", id)
         parameterSource.addValue("user_id", userId)
 
         return try {
-            namedTemplate.queryForObject("SELECT * "+
-                    "FROM recipe_list " +
-                    "INNER JOIN user_recipe_list url on recipe_list.id = url.recipe_list " +
-                    "WHERE id = :id AND url.user_id = :user_id ", parameterSource) { rs, _ ->
+            namedTemplate.queryForObject("""
+                SELECT
+	                *
+                FROM
+	                recipe_list rl
+                    INNER JOIN location_recipe_list lrl ON lrl.recipe_list_id = rl.id
+                    INNER JOIN location_user_account lua ON lua.location_id = lrl.location_id
+                WHERE
+                    rl.id = :recipe_list_id
+                    AND lua.user_account_id = :user_id
+            """.trimIndent(), parameterSource) { rs, _ ->
                 mapToRecipeList(rs)
             }
         } catch (exception: DataAccessException) {
@@ -31,15 +39,25 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getRecipeLists(userId: Long): List<RecipeList> {
+    fun getRecipeLists(userId: Long, locationId: Long): List<RecipeList> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", userId)
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("location_id", locationId)
 
-        return namedTemplate.query("SELECT * " +
-                "FROM recipe_list " +
-                "INNER JOIN user_recipe_list url on recipe_list.id = url.recipe_list " +
-                "WHERE url.user_id = :id", parameterSource) { rs, _ ->
+        val query = """
+            SELECT
+            	rl.id, rl.name, rl.created, lrc.location_id
+            FROM
+            	recipe_list rl
+            	INNER JOIN location_recipe_list lrc ON lrc.recipe_list_id = rl.id
+            	INNER JOIN location_user_account lua ON lua.location_id = lrc.location_id
+            WHERE
+            	lua.user_account_id = :user_id
+                AND lrc.location_id = :location_id
+        """.trimIndent()
+
+        return namedTemplate.query(query, parameterSource) { rs, _ ->
             mapToRecipeList(rs)
         }
     }
@@ -56,45 +74,63 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
 
-    fun saveRecipeList(recipeListId: Long, userId: Long) {
+    fun connectRecipeListAndLocation(recipeListId: Long, locationId: Long) {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
-                .withTableName("user_recipe_list")
+                .withTableName("location_recipe_list")
                 .usingGeneratedKeyColumns("id")
 
         val parameters = HashMap<String, Any>()
-        parameters["user_id"] = userId
-        parameters["recipe_list"] = recipeListId
+        parameters["location_id"] = locationId
+        parameters["recipe_list_id"] = recipeListId
 
         simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
     }
 
-    fun delete(recipeListId: Long): Int {
+    fun deleteRecipeList(recipeListId: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("id", recipeListId)
+        parameterSource.addValue("recipe_list_id", recipeListId)
 
-        return namedTemplate.update(
-                "DELETE FROM recipe_list " +
-                        "WHERE id = :id",
-                parameterSource
-        )
+        return namedTemplate.update("""
+            DELETE FROM 
+                recipe_list rl
+            WHERE 
+                rl.id = :recipe_list_id
+        """.trimIndent(), parameterSource)
     }
 
-    fun deleteUserRecipeList(recipeListId: Long, userId: Long): Int {
+    fun deleteLocationRecipeList(recipeListId: Long, locationId: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("recipe_list", recipeListId)
-        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_list_id", recipeListId)
+        parameterSource.addValue("location_id", locationId)
 
-        return namedTemplate.update(
-                "DELETE FROM user_recipe_list " +
-                        "WHERE user_id = :user_id " +
-                        "AND recipe_list = :recipe_list",
-                parameterSource
-        )
+        return namedTemplate.update("""
+            DELETE FROM 
+                location_recipe_list lrl
+            WHERE 
+                lrl.recipe_list_id = :recipe_list_id
+                AND lrl.location_id = :location_id
+        """.trimIndent(), parameterSource)
     }
 
-    fun mapToRecipeList(rs: ResultSet): RecipeList {
+    fun renameRecipeList(recipeListId: Long, newName: String): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_list_id", recipeListId)
+        parameterSource.addValue("new_name", newName)
+
+        return namedTemplate.update("""
+                UPDATE 
+                    recipe_list
+                SET 
+                    name = :new_name
+                WHERE 
+                    id = :recipe_list_id
+            """.trimIndent(), parameterSource)
+    }
+
+    private fun mapToRecipeList(rs: ResultSet): RecipeList {
         return RecipeList(
                 id = rs.getLong("id"),
                 name = rs.getString("name"),

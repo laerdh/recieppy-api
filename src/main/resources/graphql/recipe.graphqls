@@ -5,11 +5,12 @@ type Recipe {
     imageUrl: String
     site: String
     tags: [Tag]
+    comment: String
 }
 
 type Query {
-    recipe(id: ID): Recipe
-    recipes: [Recipe!]!
+    recipe(recipeId: ID!): Recipe
+    recipes(locationId: ID!): [Recipe!]!
 }
 
 input RecipeInput {
@@ -19,9 +20,11 @@ input RecipeInput {
     site: String
     recipeListId: ID!
     tags: [ID]
+    comment: String
 }
 
 type Mutation {
     newRecipe(input: RecipeInput): Recipe
+    updateRecipe(id: ID!, input: RecipeInput): Recipe
     deleteRecipe(id: ID!): ID!
 }

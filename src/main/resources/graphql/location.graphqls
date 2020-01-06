@@ -1,0 +1,25 @@
+type Location {
+    id: ID!
+    name: String!
+    address: String
+    owner: ID!
+    recipeLists: [RecipeList]
+    recipePlan: RecipePlan
+    inviteCode: String!
+}
+
+input NewLocationInput {
+    name: String!
+    address: String
+}
+
+extend type Mutation {
+    newLocation(input: NewLocationInput): Location
+    acceptInvite(inviteCode: String): Boolean
+}
+
+extend type Query {
+    getInviteCode: String!
+    locations: [Location]!
+}
+
