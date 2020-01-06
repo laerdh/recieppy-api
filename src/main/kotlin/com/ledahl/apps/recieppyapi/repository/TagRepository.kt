@@ -43,7 +43,7 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
 
-    fun saveTagsForRecipe(recipeId: Long, tags: List<Long>): Number {
+    fun saveTagsForRecipe(recipeId: Long, tags: List<Long>): Int {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("recipe_tag")
 
@@ -57,7 +57,7 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return simpleJdbcInsert.executeBatch(*parameters).size
     }
 
-    fun deleteTagsForRecipe(recipeId: Long): Number {
+    fun deleteTagsForRecipe(recipeId: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameters = MapSqlParameterSource()

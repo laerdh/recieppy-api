@@ -91,7 +91,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
 
-    fun updateRecipe(recipe: Recipe): Number {
+    fun updateRecipe(recipe: Recipe): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameters = HashMap<String, Any?>()

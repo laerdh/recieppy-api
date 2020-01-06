@@ -53,16 +53,6 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     @PreAuthorize("@authService.isRecipeListInUsersLocation(#user, #recipeInput.recipeListId)")
     fun createRecipe(user: User, recipeInput: RecipeInput): Recipe? {
-        val locationId = locationRepository.getLocationId(user.id, recipeInput.recipeListId)
-
-        val noRecipeLists = recipeListRepository
-                .getRecipeLists(user.id, locationId)
-                .none { it.id == recipeInput.recipeListId }
-
-        if (noRecipeLists) {
-            throw NotAuthorizedException("User does not subscribe to this recipelist")
-        }
-
         val newRecipe = Recipe(
                 title = recipeInput.title,
                 url = recipeInput.url,
@@ -102,7 +92,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         )
 
         val recipeUpdated = recipeRepository.updateRecipe(recipe)
-        if (recipeUpdated.toInt() > 0) {
+        if (recipeUpdated > 0) {
             recipeInput.tags?.let {
                 tagRepository.saveTagsForRecipe(recipeId = recipeId, tags = it)
             }
