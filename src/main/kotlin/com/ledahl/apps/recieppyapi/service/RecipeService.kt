@@ -75,11 +75,40 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         val newRecipeId = recipeRepository.save(newRecipe)
         if (newRecipeId != 0) {
             recipeInput.tags?.let {
-                recipeRepository.saveTagsToRecipe(recipeId = newRecipeId.toLong(), tags = it)
+                tagRepository.saveTagsForRecipe(recipeId = newRecipeId.toLong(), tags = it)
             }
 
             return newRecipe.copy(id = newRecipeId.toLong())
         }
+
+        return null
+    }
+
+    @PreAuthorize("@authService.isRecipeInUsersLocation(#user, #recipeId)")
+    fun updateRecipe(user: User, recipeId: Long, recipeInput: RecipeInput): Recipe? {
+        recipeListRepository.getRecipeList(id = recipeInput.recipeListId, userId = user.id)
+                ?: throw IllegalArgumentException("No recipe list with id ${recipeInput.recipeListId} for user")
+
+        tagRepository.deleteTagsForRecipe(recipeId)
+
+        val recipe = Recipe(
+                id = recipeId,
+                title = recipeInput.title,
+                url = recipeInput.url,
+                imageUrl = recipeInput.imageUrl,
+                site = recipeInput.site,
+                comment = recipeInput.comment,
+                recipeListId = recipeInput.recipeListId
+        )
+
+        val recipeUpdated = recipeRepository.updateRecipe(recipe)
+        if (recipeUpdated.toInt() > 0) {
+            recipeInput.tags?.let {
+                tagRepository.saveTagsForRecipe(recipeId = recipeId, tags = it)
+            }
+            return recipe
+        }
+
         return null
     }
 
