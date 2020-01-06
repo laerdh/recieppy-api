@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
+import kotlin.collections.set
 
 @Repository
 class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
@@ -90,16 +91,31 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
     }
 
-    fun saveTagsToRecipe(recipeId: Long, tags: List<Long>) {
-        tags.forEach { tagId ->
-            val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
-                    .withTableName("recipe_tag")
+    fun updateRecipe(recipe: Recipe): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
-            val parameters = HashMap<String, Any>()
-            parameters["recipe_id"] = recipeId
-            parameters["tag_id"] = tagId
+        val parameters = HashMap<String, Any?>()
+        parameters["recipe_id"] = recipe.id
+        parameters["title"] = recipe.title
+        parameters["url"] = recipe.url
+        parameters["image_url"] = recipe.imageUrl
+        parameters["site"] = recipe.site
+        parameters["recipe_list_id"] = recipe.recipeListId
+        parameters["comment"] = recipe.comment
 
-            simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
+        val query = """
+            UPDATE
+                recipe
+            SET
+                title = :title, url = :url, image_url = :image_url, site = :site, recipe_list_id = :recipe_list_id, comment = :comment
+            WHERE
+                id = :recipe_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.update(query, parameters)
+        } catch (exception: DataAccessException) {
+            0
         }
     }
 
