@@ -39,7 +39,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 .withTableName("location_user_account")
 
         val parameters = HashMap<String, Any>()
-        parameters["locationId"] = locationId
+        parameters["location_id"] = locationId
         parameters["user_account_id"] = userId
 
         return simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
@@ -94,15 +94,16 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun getLocationsForUser(userId: Long): List<Location> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("created_by", userId)
+        parameterSource.addValue("user_id", userId)
 
         val query = """
             SELECT
             	*
             FROM
-            	LOCATION
+            	LOCATION l
+                INNER JOIN location_user_account lua ON lua.location_id = l.id
             WHERE
-            	created_by = :created_by
+            	lua.user_account_id = :user_id
         """.trimIndent()
 
         return namedTemplate.query(query, parameterSource) { rs, _ ->
@@ -220,7 +221,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getLocationFromInviteCode(inviteCode: String): Long? {
+    fun getLocationIdFromInviteCode(inviteCode: String): Long? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
 
@@ -270,6 +271,30 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             } ?: 0
         } catch (dae: DataAccessException) {
             return 0
+        }
+    }
+
+    fun getLocationNameFromInviteCode(inviteCode: String): String? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+
+        parameterSource.addValue("invite_code", inviteCode)
+
+        val query = """
+            SELECT 
+                name
+            FROM 
+                location l
+            WHERE
+                l.invite_code = :invite_code
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                rs.getString("name") ?: null
+            }
+        } catch (dae: DataAccessException) {
+            return null
         }
     }
 
