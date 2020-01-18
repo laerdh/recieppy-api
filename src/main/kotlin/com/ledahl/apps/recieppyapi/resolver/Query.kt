@@ -66,4 +66,8 @@ class Query(@Autowired private val userService: UserService,
                 weekNumber = weekNumber
         )
     }
+
+    fun getLocationForInviteCode(inviteCode: String): String? {
+        return locationService.getLocationNameForInviteCode(inviteCode)
+    }
 }

@@ -59,7 +59,7 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
     }
 
     fun acceptInviteForUser(user: User, inviteCode: String): Boolean {
-        val locationIdForInviteCode = locationRepository.getLocationFromInviteCode(inviteCode)
+        val locationIdForInviteCode = locationRepository.getLocationIdFromInviteCode(inviteCode)
 
         if (locationIdForInviteCode == null) {
             throw GraphQLException("Invite-code not valid")
@@ -78,9 +78,13 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         return locationRepository.getLocationsForUser(user.id)
     }
 
+    fun getLocationNameForInviteCode(inviteCode: String): String? {
+        return locationRepository.getLocationNameFromInviteCode(inviteCode)
+    }
+
     private fun createUniqueInviteCode(): String {
         val inviteCode = UUID.randomUUID().toString().substring(0, 6)
-        val existingLocationForInviteCode = locationRepository.getLocationFromInviteCode(inviteCode)
+        val existingLocationForInviteCode = locationRepository.getLocationIdFromInviteCode(inviteCode)
 
         return if (existingLocationForInviteCode == null) {
             inviteCode

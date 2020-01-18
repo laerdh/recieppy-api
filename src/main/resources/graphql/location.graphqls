@@ -21,5 +21,6 @@ extend type Mutation {
 extend type Query {
     getInviteCode: String!
     locations: [Location]!
+    locationForInviteCode(inviteCode: String): String
 }
 
