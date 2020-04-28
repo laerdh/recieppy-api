@@ -29,8 +29,19 @@ class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanR
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
     fun createRecipePlanEvent(user: User, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
+        val recipePlan = getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
+
+        val existingRecipePlanEventForDate = recipePlanRepository
+                .getRecipePlanEventsForWeek(locationId = locationId, weekNumber = recipePlan.weekNumber)
+                .any { it.date == recipePlanEvent.date }
+
+        if (existingRecipePlanEventForDate) {
+            throw IllegalArgumentException("Recipe plan event with date (${recipePlanEvent.date}) already exists.")
+        }
+
         recipePlanRepository.createRecipePlanEvent(locationId = locationId, recipePlanEvent = recipePlanEvent)
-        return getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
+
+        return recipePlan
     }
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
