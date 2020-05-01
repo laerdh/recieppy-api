@@ -5,5 +5,5 @@ CREATE TABLE shared_recipe_list(
     sharer_id BIGINT NOT NULL REFERENCES user_account(id),
     recipient_id BIGINT REFERENCES user_account(id),
     invite_code VARCHAR(6),
-    accepted BOOLEAN
+    accepted BOOLEAN DEFAULT false
 );
