@@ -21,7 +21,8 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("user_id", userId)
 
         val query = """
-            SELECT COUNT(*)
+            SELECT
+                COUNT(*)
             FROM (
                 SELECT
                     rl.id
@@ -59,7 +60,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun isRecipeListEditableToUser(userId: Long, recipeListId: Long): Boolean {
+    fun isRecipeListEditableForUser(userId: Long, recipeListId: Long): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("user_id", userId)

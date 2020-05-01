@@ -50,11 +50,11 @@ class AuthService(@Autowired private val userService: UserService,
         return recipeRepository.isRecipeAvailableToUser(userId = user.id, recipeId = recipeId)
     }
 
-    fun isRecipeListEditableToUser(user: User, recipeListId: Long): Boolean {
-        return recipeListRepository.isRecipeListEditableToUser(userId = user.id, recipeListId = recipeListId)
+    fun isRecipeListEditableForUser(user: User, recipeListId: Long): Boolean {
+        return recipeListRepository.isRecipeListEditableForUser(userId = user.id, recipeListId = recipeListId)
     }
 
-    fun isRecipeEditableToUser(user: User, recipeId: Long): Boolean {
-        return recipeRepository.isRecipeEditableToUser(userId = user.id, recipeId = recipeId)
+    fun isRecipeEditableForUser(user: User, recipeId: Long): Boolean {
+        return recipeRepository.isRecipeEditableForUser(userId = user.id, recipeId = recipeId)
     }
 }
