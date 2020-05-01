@@ -3,6 +3,8 @@ type RecipeList {
     name: String!
     created: String!
     recipes: [Recipe]
+    created: String!
+    createdBy: String
 }
 
 extend type Query {
