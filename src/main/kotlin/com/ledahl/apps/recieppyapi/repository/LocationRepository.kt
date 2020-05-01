@@ -163,64 +163,6 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun isRecipeListInUsersLocation(userId: Long, recipeListId: Long): Boolean {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("user_id", userId)
-        parameterSource.addValue("recipe_list_id", recipeListId)
-
-        val query = """
-            SELECT
-                COUNT(*)
-            FROM
-                recipe_list rl
-                INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
-                INNER JOIN location l ON lrl.location_id = l.id
-                INNER JOIN location_user_account lua ON l.id = lua.location_id
-            WHERE
-                lua.user_account_id = :user_id
-                AND rl.id = :recipe_list_id
-        """.trimIndent()
-
-        return try {
-            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                rs.getInt("count") > 0
-            } ?: false
-        } catch (exception: DataAccessException) {
-            false
-        }
-    }
-
-    fun isRecipeInUsersLocation(userId: Long, recipeId: Long): Boolean {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-
-        val parameters = MapSqlParameterSource()
-        parameters.addValue("user_id", userId)
-        parameters.addValue("recipe_id", recipeId)
-
-        val query = """
-            SELECT
-                COUNT(*)
-            FROM
-                recipe r
-                INNER JOIN recipe_list rl ON r.recipe_list_id = rl.id
-                INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
-                INNER JOIN location_user_account lua ON lrl.location_id = lua.location_id
-            WHERE
-                lua.user_account_id = :user_id
-                AND r.id = :recipe_id
-        """.trimIndent()
-
-        return try {
-            namedTemplate.queryForObject(query, parameters) { rs, _ ->
-                rs.getInt("count") > 0
-            } ?: false
-        } catch (exception: DataAccessException) {
-            false
-        }
-    }
-
     fun getLocationIdFromInviteCode(inviteCode: String): Long? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()

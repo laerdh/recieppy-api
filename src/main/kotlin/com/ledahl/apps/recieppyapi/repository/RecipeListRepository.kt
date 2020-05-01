@@ -13,6 +13,82 @@ import java.util.*
 
 @Repository
 class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
+    fun isRecipeListAvailableToUser(userId: Long, recipeListId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_list_id", recipeListId)
+        parameterSource.addValue("user_id", userId)
+
+        val query = """
+            SELECT
+                COUNT(*)
+            FROM (
+                SELECT
+                    rl.id
+                FROM
+                    recipe_list rl
+                        INNER JOIN location_recipe_list lrl on rl.id = lrl.recipe_list_id
+                        INNER JOIN location l on lrl.location_id = l.id
+                        INNER JOIN location_user_account lua on l.id = lua.location_id
+                WHERE
+                    lua.user_account_id = :user_id
+                AND
+                    rl.id = :recipe_list_id
+                UNION
+                SELECT
+                    rl.id
+                FROM
+                    recipe_list rl
+                        INNER JOIN shared_recipe_list srl ON srl.recipe_list_id = rl.id
+                        INNER JOIN user_account ua on ua.id = srl.recipient_id
+                WHERE
+                    ua.id = :user_id
+                AND
+                    rl.id = :recipe_list_id
+                AND
+                    srl.accepted
+            ) AS recipe_lists
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                rs.getInt("count") > 0
+            } ?: false
+        } catch (ex: DataAccessException) {
+            false
+        }
+    }
+
+    fun isRecipeListEditableForUser(userId: Long, recipeListId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_list_id", recipeListId)
+
+        val query = """
+            SELECT
+                COUNT(*)
+            FROM
+                recipe_list rl
+                INNER JOIN location_recipe_list lrl on rl.id = lrl.recipe_list_id
+                INNER JOIN location l on lrl.location_id = l.id
+                INNER JOIN location_user_account lua on l.id = lua.location_id
+            WHERE
+                lua.user_account_id = :user_id
+            AND
+                rl.id = :recipe_list_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                rs.getInt("count") > 0
+            } ?: false
+        } catch (ex: DataAccessException) {
+            false
+        }
+    }
+
     // TODO Rename "id" param to recipeListId or similar
     fun getRecipeList(id: Long, userId: Long): RecipeList? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)

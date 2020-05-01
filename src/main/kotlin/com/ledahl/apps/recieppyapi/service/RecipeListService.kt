@@ -17,7 +17,7 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
                         @Autowired private val recipeRepository: RecipeRepository,
                         @Autowired private val locationRepository: LocationRepository) {
 
-    @PreAuthorize("@authService.isRecipeListInUsersLocation(#user, #id)")
+    @PreAuthorize("@authService.isRecipeListAvailableToUser(#user, #id)")
     fun getRecipeList(user: User, id: Long): RecipeList? {
         return recipeListRepository.getRecipeList(id = id, userId = user.id)
     }
@@ -42,7 +42,7 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
         return null
     }
 
-    @PreAuthorize("@authService.isRecipeListInUsersLocation(#user, #recipeListId)")
+    @PreAuthorize("@authService.isRecipeListEditableForUser(#user, #recipeListId)")
     fun deleteRecipeList(user: User, recipeListId: Long): Long {
         val locationId = locationRepository.getLocationId(user.id, recipeListId)
         val locationRecipeListDeleted = recipeListRepository.deleteLocationRecipeList(
@@ -59,7 +59,7 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
         return recipeListId
     }
 
-    @PreAuthorize("@authService.isRecipeListInUsersLocation(#user, #recipeListId)")
+    @PreAuthorize("@authService.isRecipeListEditableForUser(#user, #recipeListId)")
     fun renameRecipeList(user: User, recipeListId: Long, newName: String): RecipeList? {
         val updated = recipeListRepository.renameRecipeList(
                 recipeListId = recipeListId,

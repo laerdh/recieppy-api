@@ -25,7 +25,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     private val logger = LoggerFactory.getLogger(RecipeService::class.java)
 
-    @PreAuthorize("@authService.isRecipeInUsersLocation(#user, #recipeId)")
+    @PreAuthorize("@authService.isRecipeAvailableToUser(#user, #recipeId)")
     fun getRecipe(user: User, recipeId: Long): Recipe? {
         return recipeRepository.getRecipe(recipeId)
     }
@@ -51,7 +51,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return tagRepository.getTagsForRecipe(recipeId)
     }
 
-    @PreAuthorize("@authService.isRecipeListInUsersLocation(#user, #recipeInput.recipeListId)")
+    @PreAuthorize("@authService.isRecipeListEditableForUser(#user, #recipeInput.recipeListId)")
     fun createRecipe(user: User, recipeInput: RecipeInput): Recipe? {
         val newRecipe = Recipe(
                 title = recipeInput.title,
@@ -74,7 +74,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return null
     }
 
-    @PreAuthorize("@authService.isRecipeInUsersLocation(#user, #recipeId)")
+    @PreAuthorize("@authService.isRecipeEditableForUser(#user, #recipeId)")
     fun updateRecipe(user: User, recipeId: Long, recipeInput: RecipeInput): Recipe? {
         recipeListRepository.getRecipeList(id = recipeInput.recipeListId, userId = user.id)
                 ?: throw IllegalArgumentException("No recipe list with id ${recipeInput.recipeListId} for user")
@@ -111,7 +111,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return null
     }
 
-    @PreAuthorize("@authService.isRecipeInUsersLocation(#user, #recipeId)")
+    @PreAuthorize("@authService.isRecipeEditableForUser(#user, #recipeId)")
     fun deleteRecipe(user: User, recipeId: Long): Long {
         val recipe = recipeRepository.getRecipe(recipeId) ?: throw GraphQLException("Recipe with id: $recipeId not found")
         val locationId = locationRepository.getLocationId(user.id, recipe.recipeListId)
