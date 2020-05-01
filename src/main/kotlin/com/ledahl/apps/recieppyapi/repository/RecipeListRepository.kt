@@ -102,20 +102,25 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rl.id, rl.name, rl.created, false AS shared, concat(owner.first_name, ' ', owner.last_name) AS created_by
             FROM
                 recipe_list rl
-                    LEFT JOIN user_account owner ON rl.owner_id = owner.id
+                INNER JOIN recipe_list_recipe rlr ON rl.id = rlr.recipe_list_id
+                INNER JOIN location_recipe_list lrl ON rlr.recipe_list_id = lrl.recipe_list_id
+                INNER JOIN location_user_account lua ON lrl.location_id = lua.location_id
+                LEFT JOIN user_account owner ON rl.owner_id = owner.id
             WHERE
-                    rl.id = :recipe_list_id
+                rl.id = :recipe_list_id
+            AND
+                lua.user_account_id = :user_id
             UNION
             SELECT
                 rl.id, rl.name, rl.created, true AS shared, concat(owner.first_name, ' ', owner.last_name) AS created_by
             FROM
                 recipe_list rl
-                    INNER JOIN shared_recipe_list srl ON rl.id = srl.recipe_list_id
-                    LEFT JOIN user_account owner ON srl.recipient_id = owner.id
+                INNER JOIN shared_recipe_list srl ON rl.id = srl.recipe_list_id
+                LEFT JOIN user_account owner ON srl.sharer_id = owner.id
             WHERE
-                  rl.id = :recipe_list_id
-              AND
-                  srl.recipient_id = :user_id
+                rl.id = :recipe_list_id
+            AND
+                srl.recipient_id = :user_id
         """.trimIndent()
 
         return try {
