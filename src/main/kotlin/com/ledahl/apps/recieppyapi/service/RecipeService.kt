@@ -75,7 +75,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     @PreAuthorize("@authService.isRecipeEditableForUser(#user, #recipeId)")
     fun updateRecipe(user: User, recipeId: Long, recipeInput: RecipeInput): Recipe? {
-        recipeListRepository.getRecipeList(id = recipeInput.recipeListId, userId = user.id)
+        recipeListRepository.getRecipeList(userId = user.id, recipeListId = recipeInput.recipeListId)
                 ?: throw IllegalArgumentException("No recipe list with id ${recipeInput.recipeListId} for user")
 
         val recipe = recipeRepository.getRecipe(recipeId) ?: throw GraphQLException("No recipe with id $recipeId found")
