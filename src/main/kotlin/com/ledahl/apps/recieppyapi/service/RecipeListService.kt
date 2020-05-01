@@ -10,16 +10,15 @@ import graphql.GraphQLException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
-import java.time.LocalDate
 
 @Service
 class RecipeListService(@Autowired private val recipeListRepository: RecipeListRepository,
                         @Autowired private val recipeRepository: RecipeRepository,
                         @Autowired private val locationRepository: LocationRepository) {
 
-    @PreAuthorize("@authService.isRecipeListAvailableToUser(#user, #id)")
-    fun getRecipeList(user: User, id: Long): RecipeList? {
-        return recipeListRepository.getRecipeList(id = id, userId = user.id)
+    @PreAuthorize("@authService.isRecipeListAvailableToUser(#user, #recipeListId)")
+    fun getRecipeList(user: User, recipeListId: Long): RecipeList? {
+        return recipeListRepository.getRecipeList(userId = user.id, recipeListId = recipeListId)
     }
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
@@ -29,8 +28,8 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #recipeList.locationId)")
     fun createRecipeList(user: User, recipeList: RecipeListInput): RecipeList? {
-        val newRecipeList = RecipeList(name = recipeList.name, created = LocalDate.now())
-        val newRecipeListId = recipeListRepository.save(newRecipeList)
+        val newRecipeList = RecipeList(name = recipeList.name)
+        val newRecipeListId = recipeListRepository.createRecipeList(userId = user.id, recipeList = newRecipeList)
 
         if (newRecipeListId != 0) {
             recipeListRepository.connectRecipeListAndLocation(
