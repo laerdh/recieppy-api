@@ -13,6 +13,53 @@ import kotlin.collections.set
 
 @Repository
 class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
+    fun isRecipeAvailableToUser(userId: Long, recipeId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_id", recipeId)
+        parameterSource.addValue("user_id", userId)
+
+        val query = """
+            SELECT COUNT(*)
+            FROM (
+                SELECT
+                    r.id
+                FROM
+                    recipe r
+                    INNER JOIN recipe_list_recipe rlr on r.id = rlr.recipe_id
+                    INNER JOIN recipe_list rl on rlr.recipe_list_id = rl.id
+                    INNER JOIN location_recipe_list lrl on rl.id = lrl.recipe_list_id
+                    INNER JOIN location_user_account lua on lrl.location_id = lua.location_id
+                WHERE
+                    lua.user_account_id = :user_id
+                AND
+                    r.id = :recipe_id
+                UNION
+                SELECT
+                    r.id
+                FROM
+                    recipe r
+                    INNER JOIN shared_recipe sr on r.id = sr.recipe_id
+                    INNER JOIN user_account ua on sr.recipient_id = ua.id
+                WHERE
+                    ua.id = :user_id
+                AND
+                    r.id = :recipe_id
+                AND
+                    accepted
+            ) AS recipes
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                rs.getInt("count") > 0
+            } ?: false
+        } catch (ex: DataAccessException) {
+            false
+        }
+    }
+
     fun getRecipesForLocation(locationId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
