@@ -42,11 +42,19 @@ class AuthService(@Autowired private val userService: UserService,
         return locationRepository.isUserMemberOfLocation(userId = user.id, locationId = locationId)
     }
 
-    fun isRecipeListInUsersLocation(user: User, recipeListId: Long): Boolean {
+    fun isRecipeListAvailableToUser(user: User, recipeListId: Long): Boolean {
         return recipeListRepository.isRecipeListAvailableToUser(userId = user.id, recipeListId = recipeListId)
     }
 
-    fun isRecipeInUsersLocation(user: User, recipeId: Long): Boolean {
+    fun isRecipeAvailableToUser(user: User, recipeId: Long): Boolean {
         return recipeRepository.isRecipeAvailableToUser(userId = user.id, recipeId = recipeId)
+    }
+
+    fun isRecipeListEditableToUser(user: User, recipeListId: Long): Boolean {
+        return recipeListRepository.isRecipeListEditableToUser(userId = user.id, recipeListId = recipeListId)
+    }
+
+    fun isRecipeEditableToUser(user: User, recipeId: Long): Boolean {
+        return recipeRepository.isRecipeEditableToUser(userId = user.id, recipeId = recipeId)
     }
 }

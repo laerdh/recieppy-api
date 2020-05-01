@@ -60,6 +60,35 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
+    fun isRecipeEditableToUser(userId: Long, recipeId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_id", recipeId)
+
+        val query = """
+            SELECT
+                COUNT(*)
+            FROM
+                recipe r
+                INNER JOIN recipe_list rl on r.recipe_list_id = rl.id
+                INNER JOIN location_recipe_list lrl on rl.id = lrl.recipe_list_id
+                INNER JOIN location_user_account lua on lrl.location_id = lua.location_id
+            WHERE
+                lua.user_account_id = :user_id
+            AND
+                r.id = :recipe_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                rs.getInt("count") > 0
+            } ?: false
+        } catch (ex: DataAccessException) {
+            false
+        }
+    }
+
     fun getRecipesForLocation(locationId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
