@@ -6,6 +6,8 @@ type Recipe {
     site: String
     tags: [Tag]
     comment: String
+    created: String!
+    createdBy: String
 }
 
 type Query {
