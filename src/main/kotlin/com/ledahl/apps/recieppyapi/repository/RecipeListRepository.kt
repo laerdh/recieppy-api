@@ -250,6 +250,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return RecipeList(
                 id = rs.getLong("id"),
                 name = rs.getString("name"),
+                shared = rs.getBoolean("shared"),
                 created = rs.getTimestamp("created").toLocalDateTime(),
                 createdBy = rs.getString("created_by")
         )
