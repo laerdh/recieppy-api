@@ -53,6 +53,9 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
             throw GraphQLException("Recipe list (id: $recipeListId) not found")
         }
 
+        recipeRepository.getRecipesForRecipeList(recipeListId).forEach {
+            recipeRepository.deleteRecipeFromRecipeList(recipeId = it.id, recipeListId = recipeListId)
+        }
         recipeRepository.deleteRecipesForRecipeList(recipeListId = recipeListId)
 
         recipeListRepository.deleteRecipeList(recipeListId = recipeListId)
