@@ -64,15 +64,15 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun save(tag: Tag, locationId: Long): Number {
+    fun createTag(tag: Tag, locationId: Long): Number {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("tag")
                 .usingGeneratedKeyColumns("id")
-        val parameters = HashMap<String, Any>()
-        parameters["text"] = tag.text
-        parameters["location_id"] = locationId
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("text", tag.text)
+        parameterSource.addValue("location_id", locationId)
 
-        return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
+        return simpleJdbcInsert.executeAndReturnKey(parameterSource)
     }
 
     fun saveTagsForRecipe(recipeId: Long, tags: List<Long>): Int {
