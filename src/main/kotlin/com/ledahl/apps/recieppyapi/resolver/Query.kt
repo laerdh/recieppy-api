@@ -48,6 +48,11 @@ class Query(@Autowired private val userService: UserService,
         return recipeService.getTags()
     }
 
+    fun getTagsForLocation(locationId: Long, env: DataFetchingEnvironment): List<Tag> {
+        val user = env.getContext<AuthContext>().user
+        return recipeService.getTagsForLocation(user = user, locationId = locationId)
+    }
+
     fun getLocations(env: DataFetchingEnvironment): List<Location> {
         val user = env.getContext<AuthContext>().user
         return locationService.getLocations(user)

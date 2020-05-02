@@ -113,7 +113,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     fun createTag(tag: TagInput): Tag? {
         val newTag = Tag(text = tag.text)
-        val newTagId = tagRepository.save(newTag)
+        val newTagId = tagRepository.createTag(newTag, tag.locationId)
         if (newTagId != 0) {
             return newTag.copy(id = newTagId.toLong())
         }
@@ -135,5 +135,10 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         }
 
         throw GraphQLException("Could not delete recipe (id: $recipeId)")
+    }
+
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun getTagsForLocation(user: User, locationId: Long): List<Tag> {
+        return tagRepository.getTagsForLocation(locationId)
     }
 }
