@@ -121,9 +121,9 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     fun deleteRecipeFromRecipePlanEvents(locationId: Long, recipeId: Long): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
-        val parameters = MapSqlParameterSource()
-        parameters["recipe_id"] = recipeId
-        parameters["location_id"] = locationId
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_id", recipeId)
+        parameterSource.addValue("location_id", locationId)
 
         val query = """
             DELETE FROM
@@ -134,7 +134,7 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 
         """.trimIndent()
         return try {
-            val deleted = namedTemplate.update(query, parameters)
+            val deleted = namedTemplate.update(query, parameterSource)
             return deleted > 0
         } catch (exception: DataAccessException) {
             false
