@@ -187,7 +187,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getLocationId(userId: Long, recipeListId: Long): Long {
+    fun getLocationId(userId: Long, recipeListId: Long): Long? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
 
@@ -210,9 +210,9 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getLong("location_id")
-            } ?: 0
+            } ?: null
         } catch (dae: DataAccessException) {
-            return 0
+            return null
         }
     }
 

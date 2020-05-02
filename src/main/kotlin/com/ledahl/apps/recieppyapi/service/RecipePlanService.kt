@@ -73,6 +73,11 @@ class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanR
         return getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
     }
 
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun deleteRecipeFromRecipePlanEvents(user: User, locationId: Long, recipeId: Long): Boolean {
+        return recipePlanRepository.deleteRecipeFromRecipePlanEvents(locationId = locationId, recipeId = recipeId)
+    }
+
     private fun getRecipePlan(locationId: Long, date: LocalDate): RecipePlan {
         val weekNumber = date.get(WeekFields.ISO.weekOfWeekBasedYear())
         return RecipePlan(locationId = locationId, weekNumber = weekNumber)
