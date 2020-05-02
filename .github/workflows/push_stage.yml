@@ -33,8 +33,10 @@ jobs:
     # Set app version as environment variable
     - name: Set app version
       run: |
-        export BUILD_VERSION=$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print tolower(a[2]) }').$GITHUB_SHA
-        echo "::set-env name=VERSION_TAG::$BUILD_VERSION"
+        export BUILD_VERSION=$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print tolower(a[2]) }')
+        echo "::set-env name=VERSION_NAME::$BUILD_VERSION"
+        echo Displaying version tag:
+        echo ${{ env.VERSION_NAME }}
 
     # Create Firebase Account file
     - name: Create Firebase account file
@@ -49,9 +51,12 @@ jobs:
       with:
         arguments: bootJar
 
-    # Build docker image
+    # Build and push docker image
     - name: Build Docker image
       uses: docker/build-push-action@v1.1.0
       with:
-        repository: $GITHUB_REPOSITORY
-        tag: $VERSION_TAG
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: laerdh/recieppy-api
+        tags: ${{ env.VERSION_NAME }}
+        tag_with_sha: true
