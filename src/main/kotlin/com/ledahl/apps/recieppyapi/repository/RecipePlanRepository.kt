@@ -31,6 +31,7 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 INNER JOIN location l ON l.id = lrp.location_id
             WHERE
                 EXTRACT(WEEK FROM lrp.date) = :week_number
+                AND lrp.location_id = :location_id
             ORDER BY
                 lrp.date
         """.trimIndent()
