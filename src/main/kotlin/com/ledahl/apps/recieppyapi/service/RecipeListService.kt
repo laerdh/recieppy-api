@@ -44,6 +44,8 @@ class RecipeListService(@Autowired private val recipeListRepository: RecipeListR
     @PreAuthorize("@authService.isRecipeListEditableForUser(#user, #recipeListId)")
     fun deleteRecipeList(user: User, recipeListId: Long): Long {
         val locationId = locationRepository.getLocationId(user.id, recipeListId)
+                ?: throw GraphQLException("No location found for recipeListId $recipeListId")
+
         val locationRecipeListDeleted = recipeListRepository.deleteLocationRecipeList(
                 recipeListId = recipeListId,
                 locationId = locationId)

@@ -6,9 +6,7 @@ import com.ledahl.apps.recieppyapi.model.Tag
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.RecipeInput
 import com.ledahl.apps.recieppyapi.model.input.TagInput
-import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
-import com.ledahl.apps.recieppyapi.repository.RecipeRepository
-import com.ledahl.apps.recieppyapi.repository.TagRepository
+import com.ledahl.apps.recieppyapi.repository.*
 import graphql.GraphQLException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,8 +16,9 @@ import org.springframework.stereotype.Service
 @Service
 class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
                     @Autowired private val recipeListRepository: RecipeListRepository,
-                    @Autowired private val tagRepository: TagRepository) {
-
+                    @Autowired private val tagRepository: TagRepository,
+                    @Autowired private val recipePlanRepository: RecipePlanRepository,
+                    @Autowired private val locationRepository: LocationRepository) {
     private val logger = LoggerFactory.getLogger(RecipeService::class.java)
 
     @PreAuthorize("@authService.isRecipeAvailableToUser(#user, #recipeId)")
@@ -78,7 +77,8 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         recipeListRepository.getRecipeList(userId = user.id, recipeListId = recipeInput.recipeListId)
                 ?: throw IllegalArgumentException("No recipe list with id ${recipeInput.recipeListId} for user")
 
-        val recipe = recipeRepository.getRecipe(userId = user.id, recipeId = recipeId) ?: throw GraphQLException("No recipe with id $recipeId found")
+        val recipe = recipeRepository.getRecipe(userId = user.id, recipeId = recipeId)
+                ?: throw GraphQLException("No recipe with id $recipeId found")
 
         if (recipe.recipeListId != recipeInput.recipeListId) {
             val deleted = recipeRepository.deleteRecipeFromRecipeList(recipeId = recipe.id, recipeListId = recipe.recipeListId)
@@ -122,11 +122,18 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     @PreAuthorize("@authService.isRecipeEditableForUser(#user, #recipeId)")
     fun deleteRecipe(user: User, recipeId: Long): Long {
-        val recipe = recipeRepository.getRecipe(userId = user.id, recipeId = recipeId) ?: throw GraphQLException("Recipe with id: $recipeId not found")
+        val recipe = recipeRepository.getRecipe(userId = user.id, recipeId = recipeId)
+                ?: throw GraphQLException("Recipe with id: $recipeId not found")
 
         val deletedFromRecipeList = recipeRepository.deleteRecipeFromRecipeList(recipeId = recipeId, recipeListId = recipe.recipeListId)
         if (deletedFromRecipeList > 0) {
             tagRepository.deleteTagsForRecipe(recipeId)
+
+            val locationIdForRecipeListWithRecipe = locationRepository.getLocationId(user.id, recipe.recipeListId)
+
+            if (locationIdForRecipeListWithRecipe != null) {
+                recipePlanRepository.deleteRecipeFromRecipePlanEvents(locationIdForRecipeListWithRecipe, recipeId)
+            }
 
             val deletedRecipe = recipeRepository.deleteRecipe(recipeId)
             if (deletedRecipe > 0) {

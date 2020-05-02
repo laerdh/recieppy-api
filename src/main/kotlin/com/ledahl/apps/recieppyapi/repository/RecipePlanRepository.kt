@@ -117,4 +117,27 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             false
         }
     }
+
+    fun deleteRecipeFromRecipePlanEvents(locationId: Long, recipeId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_id", recipeId)
+        parameterSource.addValue("location_id", locationId)
+
+        val query = """
+            DELETE FROM
+                location_recipe_plan lrp
+            WHERE 
+                lrp.recipe_id = :recipe_id
+                AND lrp.location_id = :location_id
+                
+        """.trimIndent()
+        return try {
+            val deleted = namedTemplate.update(query, parameterSource)
+            return deleted > 0
+        } catch (exception: DataAccessException) {
+            false
+        }
+    }
 }
