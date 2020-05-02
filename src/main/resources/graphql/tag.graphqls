@@ -5,6 +5,7 @@ type Tag {
 
 extend type Query {
     tags: [Tag]!
+    tagsForLocation(locationId: ID): [Tag]!
 }
 
 input TagInput {

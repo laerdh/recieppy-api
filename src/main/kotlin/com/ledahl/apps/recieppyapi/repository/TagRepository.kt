@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Tag
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
@@ -12,9 +13,33 @@ import java.sql.ResultSet
 
 @Repository
 class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
     fun getTags(): List<Tag> {
         return jdbcTemplate.query("SELECT * FROM tag") { rs, _ ->
             mapToTag(rs)
+        }
+    }
+
+    fun getTagsForLocation(locationId: Long): List<Tag> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("location_id", locationId)
+
+        val query = """
+            SELECT DISTINCT
+                t.id, t.text
+            FROM tag t
+            WHERE
+                t.location_id = :location_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToTag(rs)
+            }
+        } catch (ex: DataAccessException) {
+            emptyList()
         }
     }
 

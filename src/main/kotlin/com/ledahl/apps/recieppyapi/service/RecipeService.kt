@@ -136,4 +136,9 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
         throw GraphQLException("Could not delete recipe (id: $recipeId)")
     }
+
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun getTagsForLocation(user: User, locationId: Long): List<Tag> {
+        return tagRepository.getTagsForLocation(locationId)
+    }
 }
