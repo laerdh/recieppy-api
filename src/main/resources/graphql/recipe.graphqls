@@ -5,6 +5,7 @@ type Recipe {
     imageUrl: String
     site: String
     tags: [Tag]
+    shared: Boolean!
     comment: String
     created: String!
     createdBy: String

@@ -102,8 +102,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rl.id, rl.name, rl.created, false AS shared, concat(owner.first_name, ' ', owner.last_name) AS created_by
             FROM
                 recipe_list rl
-                INNER JOIN recipe_list_recipe rlr ON rl.id = rlr.recipe_list_id
-                INNER JOIN location_recipe_list lrl ON rlr.recipe_list_id = lrl.recipe_list_id
+                INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
                 INNER JOIN location_user_account lua ON lrl.location_id = lua.location_id
                 LEFT JOIN user_account owner ON rl.owner_id = owner.id
             WHERE
@@ -121,6 +120,8 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rl.id = :recipe_list_id
             AND
                 srl.recipient_id = :user_id
+            AND
+                accepted
         """.trimIndent()
 
         return try {
@@ -250,6 +251,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return RecipeList(
                 id = rs.getLong("id"),
                 name = rs.getString("name"),
+                shared = rs.getBoolean("shared"),
                 created = rs.getTimestamp("created").toLocalDateTime(),
                 createdBy = rs.getString("created_by")
         )

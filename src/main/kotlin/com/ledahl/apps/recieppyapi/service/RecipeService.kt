@@ -24,11 +24,11 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     @PreAuthorize("@authService.isRecipeAvailableToUser(#user, #recipeId)")
     fun getRecipe(user: User, recipeId: Long): Recipe? {
-        return recipeRepository.getRecipe(recipeId)
+        return recipeRepository.getRecipe(userId = user.id, recipeId = recipeId)
     }
 
-    fun getRecipeForRecipePlan(recipeId: Long): Recipe? {
-        return recipeRepository.getRecipe(recipeId)
+    fun getRecipeForRecipePlan(user: User, recipeId: Long): Recipe? {
+        return recipeRepository.getRecipe(userId = user.id, recipeId = recipeId)
     }
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
@@ -36,8 +36,8 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return recipeRepository.getRecipesForUser(userId = user.id, locationId = locationId)
     }
 
-    fun getRecipesForRecipeList(recipeList: RecipeList): List<Recipe> {
-        return recipeRepository.getRecipesForRecipeList(recipeList.id)
+    fun getRecipesForRecipeList(userId: Long, recipeList: RecipeList): List<Recipe> {
+        return recipeRepository.getRecipesForRecipeList(userId = userId, recipeListId = recipeList.id)
     }
 
     fun getTags(): List<Tag> {
@@ -78,7 +78,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         recipeListRepository.getRecipeList(userId = user.id, recipeListId = recipeInput.recipeListId)
                 ?: throw IllegalArgumentException("No recipe list with id ${recipeInput.recipeListId} for user")
 
-        val recipe = recipeRepository.getRecipe(recipeId) ?: throw GraphQLException("No recipe with id $recipeId found")
+        val recipe = recipeRepository.getRecipe(userId = user.id, recipeId = recipeId) ?: throw GraphQLException("No recipe with id $recipeId found")
 
         if (recipe.recipeListId != recipeInput.recipeListId) {
             val deleted = recipeRepository.deleteRecipeFromRecipeList(recipeId = recipe.id, recipeListId = recipe.recipeListId)
@@ -122,7 +122,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     @PreAuthorize("@authService.isRecipeEditableForUser(#user, #recipeId)")
     fun deleteRecipe(user: User, recipeId: Long): Long {
-        val recipe = recipeRepository.getRecipe(recipeId) ?: throw GraphQLException("Recipe with id: $recipeId not found")
+        val recipe = recipeRepository.getRecipe(userId = user.id, recipeId = recipeId) ?: throw GraphQLException("Recipe with id: $recipeId not found")
 
         val deletedFromRecipeList = recipeRepository.deleteRecipeFromRecipeList(recipeId = recipeId, recipeListId = recipe.recipeListId)
         if (deletedFromRecipeList > 0) {

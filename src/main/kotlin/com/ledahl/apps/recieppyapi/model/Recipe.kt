@@ -9,5 +9,6 @@ data class Recipe(val id: Long = 0,
                   val imageUrl: String?,
                   val site: String?,
                   val comment: String?,
+                  val shared: Boolean = false,
                   val created: LocalDateTime = LocalDateTime.now(),
                   val createdBy: String = "")
