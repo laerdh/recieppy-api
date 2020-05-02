@@ -101,30 +101,29 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         val query = """
             SELECT
-                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(u.first_name, ' ', u.last_name) AS created_by, rlr.recipe_list_id
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, false AS shared
             FROM
                 recipe r
                 INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
                 INNER JOIN recipe_list rl ON rlr.recipe_list_id = rl.id
-                INNER JOIN location_recipe_list lrl on rl.id = lrl.recipe_list_id
-                INNER JOIN location_user_account lua on lrl.location_id = lua.location_id
-                INNER JOIN user_account u on lua.user_account_id = u.id
+                INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
+                INNER JOIN location_user_account lua ON lrl.location_id = lua.location_id
+                LEFT JOIN user_account owner ON r.owner_id = owner.id
             WHERE
-                u.id = :user_id
+                lua.user_account_id = :user_id
             AND
                 lua.location_id = :location_id
             UNION
             SELECT
-                r.id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, true AS shared
             FROM
                 recipe r
-                INNER JOIN shared_recipe sr on r.id = sr.recipe_id
-                INNER JOIN user_account u on sr.recipient_id = u.id
-                LEFT JOIN user_account r_owner ON sr.sharer_id = r_owner.id
+                INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                LEFT JOIN user_account owner ON r.owner_id = owner.id
             WHERE
-                u.id = :user_id
-            AND
-                sr.accepted
+                (r.id IN (SELECT recipe_id FROM shared_recipe sr WHERE sr.recipient_id = :user_id AND sr.accepted)
+            OR
+                rlr.recipe_list_id IN (SELECT recipe_list_id FROM shared_recipe_list srl WHERE srl.recipient_id = :user_id AND srl.accepted))
         """.trimIndent()
 
         return try {
