@@ -34,22 +34,24 @@ jobs:
     - name: Set app version
       run: |
         export BUILD_VERSION=$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print tolower(a[2]) }').$GITHUB_SHA
-        echo "::set-env name=APP_VERSION::$BUILD_VERSION"
+        echo "::set-env name=VERSION_TAG::$BUILD_VERSION"
 
     # Create Firebase Account file
     - name: Create Firebase account file
       run: |
-        echo Create Firebase Account file
         mkdir src/main/resources/config
         touch src/main/resources/config/${{ secrets.FIREBASE_ACCOUNT_FILE }}
-        echo Touch file
-        echo $(ls src/main/resources/config/)
         echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" >> src/main/resources/config/${{ secrets.FIREBASE_ACCOUNT_FILE }}
-        echo Injecting filecontent
 
     # Build app with Gradle
     - name: Build
       uses: eskatos/gradle-command-action@v1
       with:
         arguments: bootJar
-        
+
+    # Build docker image
+    - name: Build Docker image
+      uses: docker/build-push-action@v1.1.0
+      with:
+        repository: $GITHUB_REPOSITORY
+        tag: $VERSION_TAG
