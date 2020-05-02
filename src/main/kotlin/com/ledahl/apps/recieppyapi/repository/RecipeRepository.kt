@@ -18,12 +18,12 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("recipe_id", recipeId)
         parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_id", recipeId)
 
         val query = """
             SELECT
-                COUNT(*)
+                COUNT(*) > 0 AS accessible
             FROM (
                 SELECT
                     r.id
@@ -31,7 +31,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                     recipe r
                     INNER JOIN recipe_list_recipe rlr on r.id = rlr.recipe_id
                     INNER JOIN recipe_list rl on rlr.recipe_list_id = rl.id
-                    INNER JOIN location_recipe_list lrl on rl.id = lrl.recipe_list_id
+                    INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
                     INNER JOIN location_user_account lua on lrl.location_id = lua.location_id
                 WHERE
                     lua.user_account_id = :user_id
@@ -42,20 +42,19 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                     r.id
                 FROM
                     recipe r
-                    INNER JOIN shared_recipe sr on r.id = sr.recipe_id
-                    INNER JOIN user_account ua on sr.recipient_id = ua.id
+                    INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
                 WHERE
-                    ua.id = :user_id
+                    (r.id IN (SELECT recipe_id FROM shared_recipe sr WHERE sr.recipient_id = :user_id AND sr.accepted)
+                OR
+                    rlr.recipe_list_id IN (SELECT recipe_list_id FROM shared_recipe_list srl WHERE srl.recipient_id = :user_id AND srl.accepted))
                 AND
                     r.id = :recipe_id
-                AND
-                    accepted
             ) AS recipes
         """.trimIndent()
 
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                rs.getInt("count") > 0
+                rs.getBoolean("accessible")
             } ?: false
         } catch (ex: DataAccessException) {
             false
@@ -137,15 +136,17 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getRecipesForRecipeList(recipeListId: Long): List<Recipe> {
+    fun getRecipesForRecipeList(userId: Long, recipeListId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
         parameterSource.addValue("recipe_list_id", recipeListId)
 
         val query = """
             SELECT
-                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by, 
+                (SELECT COUNT(*) > 0 FROM shared_recipe_list sr WHERE sr.recipient_id = :user_id AND sr.recipe_list_id = :recipe_list_id AND sr.accepted) AS shared
             FROM
                 recipe r
                 INNER JOIN recipe_list_recipe rlr on r.id = rlr.recipe_id
@@ -163,23 +164,33 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun getRecipe(id: Long): Recipe? {
+    fun getRecipe(userId: Long, recipeId: Long): Recipe? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("recipe_id", id)
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_id", recipeId)
+
+        val query = """
+            SELECT
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by, 
+                ( SELECT COUNT(*) > 0
+                    FROM (
+                        SELECT 1 FROM shared_recipe sr WHERE sr.recipe_id = :recipe_id AND sr.recipient_id = :user_id AND sr.accepted
+                        UNION
+                        SELECT 1 FROM shared_recipe_list srl WHERE srl.recipe_list_id = rlr.recipe_list_id AND srl.recipient_id = :user_id AND srl.accepted
+                    ) AS shared_items
+                ) AS shared
+            FROM
+                recipe r
+                INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                LEFT JOIN user_account r_owner ON r.owner_id = r_owner.id
+            WHERE
+                r.id = :recipe_id
+        """.trimIndent()
 
         return try {
-            namedTemplate.queryForObject("""
-                SELECT 
-                    r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by
-                FROM 
-                    recipe r
-                    INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
-                    LEFT JOIN user_account r_owner ON r.owner_id = r_owner.id
-                WHERE
-                    r.id = :recipe_id
-            """.trimIndent(), parameterSource) { rs, _ ->
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 mapToRecipe(rs)
             }
         } catch (exception: DataAccessException) {
@@ -302,6 +313,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 imageUrl = rs.getString("image_url"),
                 site = rs.getString("site"),
                 comment = rs.getString("comment"),
+                shared = rs.getBoolean("shared"),
                 created = rs.getTimestamp("created").toLocalDateTime(),
                 createdBy = rs.getString("created_by")
         )
