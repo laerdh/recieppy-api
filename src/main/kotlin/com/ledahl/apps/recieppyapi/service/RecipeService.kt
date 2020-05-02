@@ -113,7 +113,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
 
     fun createTag(tag: TagInput): Tag? {
         val newTag = Tag(text = tag.text)
-        val newTagId = tagRepository.save(newTag)
+        val newTagId = tagRepository.save(newTag, tag.locationId)
         if (newTagId != 0) {
             return newTag.copy(id = newTagId.toLong())
         }

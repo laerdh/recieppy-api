@@ -51,8 +51,7 @@ class Mutation(@Autowired private val recipeService: RecipeService,
         return recipeService.deleteRecipe(user = user, recipeId = recipeId)
     }
 
-    fun newTag(tag: TagInput, env: DataFetchingEnvironment): Tag? {
-        val user = env.getContext<AuthContext>().user
+    fun newTag(tag: TagInput): Tag? {
         return recipeService.createTag(tag = tag)
     }
 

@@ -10,6 +10,7 @@ extend type Query {
 
 input TagInput {
     text: String!
+    locationId: ID!
 }
 
 extend type Mutation {
