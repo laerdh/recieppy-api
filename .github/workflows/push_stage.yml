@@ -29,7 +29,7 @@ jobs:
         echo "::set-env name=VERSION_NAME::$APP_VERSION"
     - uses: actions/upload-artifact@v2
       with:
-        name: api_version
+        name: app_version
         path: app_version.txt
 
     - name: Create Firebase account file
@@ -60,7 +60,6 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: app_version
-        path: app_version.txt
     - shell: bash
       run: |
         export APP_VERSION=`cat app_version.txt`
