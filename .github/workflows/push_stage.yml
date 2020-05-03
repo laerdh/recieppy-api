@@ -37,6 +37,11 @@ jobs:
         mkdir src/main/resources/config
         echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" >> src/main/resources/config/${{ secrets.FIREBASE_ACCOUNT_FILE }}
 
+    - uses: actions/upload-artifact@v2
+      with:
+        name: firebase_file
+        path: src/main/resources/config/${{ secrets.FIREBASE_ACCOUNT_FILE }}
+        
     - name: Gradle build
       uses: eskatos/gradle-command-action@v1
       with:
