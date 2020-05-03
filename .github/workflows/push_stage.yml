@@ -32,16 +32,20 @@ jobs:
         name: app_version
         path: app_version.txt
 
-    - name: Create Firebase account file
-      run: |
-        mkdir src/main/resources/config
-        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" >> src/main/resources/config/${{ secrets.FIREBASE_ACCOUNT_FILE }}
+    - shell: bash
+      run: mkdir src/main/resources/config
 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: firebase_file
-        path: src/main/resources/config/${{ secrets.FIREBASE_ACCOUNT_FILE }}
-        
+    - name: Fetch Firebase Service Account file
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+        chmod 700 ~/.ssh/id_rsa
+        eval $(ssh-agent -s)
+        ssh-add ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        scp ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.FIREBASE_SERVICE_ACCOUNT_FILE_PATH }} src/main/resources/config
+
     - name: Gradle build
       uses: eskatos/gradle-command-action@v1
       with:
@@ -64,6 +68,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: app_version
+
     - shell: bash
       run: |
         export APP_VERSION=`cat app_version.txt`
