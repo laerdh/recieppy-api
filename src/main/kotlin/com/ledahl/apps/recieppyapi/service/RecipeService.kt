@@ -39,6 +39,10 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
         return recipeRepository.getRecipesForRecipeList(userId = userId, recipeListId = recipeList.id)
     }
 
+    fun getSharedRecipes(userId: Long): List<Recipe> {
+        return recipeRepository.getSharedRecipes(userId)
+    }
+
     fun getTags(): List<Tag> {
         return tagRepository.getTags()
     }

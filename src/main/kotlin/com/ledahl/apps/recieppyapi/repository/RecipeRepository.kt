@@ -197,6 +197,35 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
+    fun getSharedRecipes(userId: Long): List<Recipe> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
+
+        val query = """
+            SELECT
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, true AS shared
+            FROM
+                recipe r
+                INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                INNER JOIN shared_recipe sr on r.id = sr.recipe_id
+                LEFT JOIN user_account owner on sr.sharer_id = owner.id
+            WHERE
+                sr.recipient_id = :user_id
+            AND
+                sr.accepted
+        """.trimIndent()
+
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToRecipe(rs)
+            }
+        } catch (ex: DataAccessException) {
+            emptyList()
+        }
+    }
+
     fun createRecipe(userId: Long, recipe: RecipeInput): Number {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("recipe")
