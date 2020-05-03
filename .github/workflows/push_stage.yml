@@ -35,9 +35,7 @@ jobs:
     - name: Create Firebase account file
       run: |
         mkdir src/main/resources/config
-        touch src/main/resources/config/${{ secrets.FIREBASE_ACCOUNT_FILE }}
         echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" >> src/main/resources/config/${{ secrets.FIREBASE_ACCOUNT_FILE }}
-        cat ${{ secrets.FIREBASE_ACCOUNT_FILE }}
 
     - name: Gradle build
       uses: eskatos/gradle-command-action@v1
