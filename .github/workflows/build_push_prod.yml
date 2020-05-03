@@ -7,8 +7,6 @@ on:
       - master
     repository_dispatch:
         types: run-workflow
-  pull_request:
-    branches: [ master ]
     
 
 jobs:
