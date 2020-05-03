@@ -5,12 +5,16 @@ type Recipe {
     imageUrl: String
     site: String
     tags: [Tag]
+    shared: Boolean!
     comment: String
+    created: String!
+    createdBy: String
 }
 
 type Query {
     recipe(recipeId: ID!): Recipe
     recipes(locationId: ID!): [Recipe!]!
+    sharedRecipes: [Recipe!]!
 }
 
 input RecipeInput {

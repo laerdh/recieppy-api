@@ -1,8 +1,10 @@
 type RecipeList {
     id: ID!
     name: String!
-    created: String!
     recipes: [Recipe]
+    shared: Boolean
+    created: String!
+    createdBy: String
 }
 
 extend type Query {

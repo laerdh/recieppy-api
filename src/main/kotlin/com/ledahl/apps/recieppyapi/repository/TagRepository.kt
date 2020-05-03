@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Tag
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
@@ -12,35 +13,66 @@ import java.sql.ResultSet
 
 @Repository
 class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
     fun getTags(): List<Tag> {
         return jdbcTemplate.query("SELECT * FROM tag") { rs, _ ->
             mapToTag(rs)
         }
     }
 
+    fun getTagsForLocation(locationId: Long): List<Tag> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("location_id", locationId)
+
+        val query = """
+            SELECT DISTINCT
+                t.id, t.text
+            FROM tag t
+            WHERE
+                t.location_id = :location_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToTag(rs)
+            }
+        } catch (ex: DataAccessException) {
+            emptyList()
+        }
+    }
+
     fun getTagsForRecipe(recipeId: Long): List<Tag> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_id", recipeId)
 
-        return namedTemplate.query("""
-            SELECT tag_id AS id, text
-            FROM recipe_tag AS rt
-            INNER JOIN tag ON rt.tag_id = tag.id
-            WHERE rt.recipe_id = :recipe_id
-        """.trimIndent(), parameterSource) { rs, _ ->
+        val query = """
+            SELECT
+                tag_id AS id, text
+            FROM
+                recipe_tag AS rt
+                INNER JOIN tag ON rt.tag_id = tag.id
+            WHERE
+                rt.recipe_id = :recipe_id
+        """.trimIndent()
+
+        return namedTemplate.query(query, parameterSource) { rs, _ ->
             mapToTag(rs)
         }
     }
 
-    fun save(tag: Tag): Number {
+    fun createTag(tag: Tag, locationId: Long): Number {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("tag")
                 .usingGeneratedKeyColumns("id")
-        val parameters = HashMap<String, Any>()
-        parameters["text"] = tag.text
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("text", tag.text)
+        parameterSource.addValue("location_id", locationId)
 
-        return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
+        return simpleJdbcInsert.executeAndReturnKey(parameterSource)
     }
 
     fun saveTagsForRecipe(recipeId: Long, tags: List<Long>): Int {

@@ -31,6 +31,7 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 INNER JOIN location l ON l.id = lrp.location_id
             WHERE
                 EXTRACT(WEEK FROM lrp.date) = :week_number
+                AND lrp.location_id = :location_id
             ORDER BY
                 lrp.date
         """.trimIndent()
@@ -111,6 +112,29 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             val deleted = namedTemplate.update(query, parameters)
+            return deleted > 0
+        } catch (exception: DataAccessException) {
+            false
+        }
+    }
+
+    fun deleteRecipeFromRecipePlanEvents(locationId: Long, recipeId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_id", recipeId)
+        parameterSource.addValue("location_id", locationId)
+
+        val query = """
+            DELETE FROM
+                location_recipe_plan lrp
+            WHERE 
+                lrp.recipe_id = :recipe_id
+                AND lrp.location_id = :location_id
+                
+        """.trimIndent()
+        return try {
+            val deleted = namedTemplate.update(query, parameterSource)
             return deleted > 0
         } catch (exception: DataAccessException) {
             false

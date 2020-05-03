@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Recipe
+import com.ledahl.apps.recieppyapi.model.input.RecipeInput
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -9,65 +10,186 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
-import kotlin.collections.set
 
 @Repository
 class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
-    fun getRecipesForLocation(locationId: Long): List<Recipe> {
+
+    fun isRecipeAvailableToUser(userId: Long, recipeId: Long): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_id", recipeId)
+
+        val query = """
+            SELECT
+                COUNT(*) > 0 AS accessible
+            FROM (
+                SELECT
+                    r.id
+                FROM
+                    recipe r
+                    INNER JOIN recipe_list_recipe rlr on r.id = rlr.recipe_id
+                    INNER JOIN recipe_list rl on rlr.recipe_list_id = rl.id
+                    INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
+                    INNER JOIN location_user_account lua on lrl.location_id = lua.location_id
+                WHERE
+                    lua.user_account_id = :user_id
+                AND
+                    r.id = :recipe_id
+                UNION
+                SELECT
+                    r.id
+                FROM
+                    recipe r
+                    INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                WHERE
+                    (r.id IN (SELECT recipe_id FROM shared_recipe sr WHERE sr.recipient_id = :user_id AND sr.accepted)
+                OR
+                    rlr.recipe_list_id IN (SELECT recipe_list_id FROM shared_recipe_list srl WHERE srl.recipient_id = :user_id AND srl.accepted))
+                AND
+                    r.id = :recipe_id
+            ) AS recipes
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                rs.getBoolean("accessible")
+            } ?: false
+        } catch (ex: DataAccessException) {
+            false
+        }
+    }
+
+    fun isRecipeEditableForUser(userId: Long, recipeId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_id", recipeId)
+
+        val query = """
+            SELECT
+                COUNT(*)
+            FROM
+                recipe r
+                INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                INNER JOIN recipe_list rl ON rlr.recipe_list_id = rl.id
+                INNER JOIN location_recipe_list lrl on rl.id = lrl.recipe_list_id
+                INNER JOIN location_user_account lua on lrl.location_id = lua.location_id
+            WHERE
+                lua.user_account_id = :user_id
+            AND
+                r.id = :recipe_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                rs.getInt("count") > 0
+            } ?: false
+        } catch (ex: DataAccessException) {
+            false
+        }
+    }
+
+    fun getRecipesForUser(userId: Long, locationId: Long): List<Recipe> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
         parameterSource.addValue("location_id", locationId)
 
         val query = """
             SELECT
-                r.id, r.title, r.url, r.image_url, r.site, r.comment
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, false AS shared
             FROM
                 recipe r
-                INNER JOIN recipe_list rl ON r.recipe_list_id = rl.id
+                INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                INNER JOIN recipe_list rl ON rlr.recipe_list_id = rl.id
                 INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
+                INNER JOIN location_user_account lua ON lrl.location_id = lua.location_id
+                LEFT JOIN user_account owner ON r.owner_id = owner.id
             WHERE
-                lrl.location_id = :location_id
+                lua.user_account_id = :user_id
+            AND
+                lua.location_id = :location_id
+            UNION
+            SELECT
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, true AS shared
+            FROM
+                recipe r
+                INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                LEFT JOIN user_account owner ON r.owner_id = owner.id
+            WHERE
+                (r.id IN (SELECT recipe_id FROM shared_recipe sr WHERE sr.recipient_id = :user_id AND sr.accepted)
+            OR
+                rlr.recipe_list_id IN (SELECT recipe_list_id FROM shared_recipe_list srl WHERE srl.recipient_id = :user_id AND srl.accepted))
         """.trimIndent()
 
-        return namedTemplate.query(query, parameterSource) { rs, _ ->
-            mapToRecipe(rs)
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToRecipe(rs)
+            }
+        } catch (ex: DataAccessException) {
+            emptyList()
         }
     }
 
-    fun getRecipesForRecipeList(recipeListId: Long): List<Recipe> {
+    fun getRecipesForRecipeList(userId: Long, recipeListId: Long): List<Recipe> {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
         parameterSource.addValue("recipe_list_id", recipeListId)
 
-        return namedTemplate.query("""
-            SELECT 
-                r.id, r.title, r.url, r.image_url, r.site, r.recipe_list_id, r.comment
-            FROM 
-                recipe_list rl
-                INNER JOIN recipe r ON r.recipe_list_id = rl.id 
-            WHERE 
-                rl.id = :recipe_list_id
-        """.trimIndent(), parameterSource) { rs, _ ->
-            mapToRecipe(rs)
+        val query = """
+            SELECT
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by, 
+                (SELECT COUNT(*) > 0 FROM shared_recipe_list sr WHERE sr.recipient_id = :user_id AND sr.recipe_list_id = :recipe_list_id AND sr.accepted) AS shared
+            FROM
+                recipe r
+                INNER JOIN recipe_list_recipe rlr on r.id = rlr.recipe_id
+                LEFT JOIN user_account r_owner ON r.owner_id = r_owner.id
+            WHERE
+                rlr.recipe_list_id = :recipe_list_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToRecipe(rs)
+            }
+        } catch (ex: DataAccessException) {
+            emptyList()
         }
     }
 
-    fun getRecipe(id: Long): Recipe? {
+    fun getRecipe(userId: Long, recipeId: Long): Recipe? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("recipe_id", id)
+        parameterSource.addValue("user_id", userId)
+        parameterSource.addValue("recipe_id", recipeId)
+
+        val query = """
+            SELECT
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by, 
+                ( SELECT COUNT(*) > 0
+                    FROM (
+                        SELECT 1 FROM shared_recipe sr WHERE sr.recipe_id = :recipe_id AND sr.recipient_id = :user_id AND sr.accepted
+                        UNION
+                        SELECT 1 FROM shared_recipe_list srl WHERE srl.recipe_list_id = rlr.recipe_list_id AND srl.recipient_id = :user_id AND srl.accepted
+                    ) AS shared_items
+                ) AS shared
+            FROM
+                recipe r
+                INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                LEFT JOIN user_account r_owner ON r.owner_id = r_owner.id
+            WHERE
+                r.id = :recipe_id
+        """.trimIndent()
 
         return try {
-            namedTemplate.queryForObject("""
-                SELECT 
-                    * 
-                FROM 
-                    recipe r
-                WHERE
-                    r.id = :recipe_id
-            """.trimIndent(), parameterSource) { rs, _ ->
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 mapToRecipe(rs)
             }
         } catch (exception: DataAccessException) {
@@ -75,54 +197,118 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun save(recipe: Recipe): Number {
+    fun getSharedRecipes(userId: Long): List<Recipe> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("user_id", userId)
+
+        val query = """
+            SELECT
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, true AS shared
+            FROM
+                recipe r
+                INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
+                INNER JOIN shared_recipe sr on r.id = sr.recipe_id
+                LEFT JOIN user_account owner on sr.sharer_id = owner.id
+            WHERE
+                sr.recipient_id = :user_id
+            AND
+                sr.accepted
+        """.trimIndent()
+
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToRecipe(rs)
+            }
+        } catch (ex: DataAccessException) {
+            emptyList()
+        }
+    }
+
+    fun createRecipe(userId: Long, recipe: RecipeInput): Number {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("recipe")
                 .usingGeneratedKeyColumns("id")
+                .usingColumns("owner_id", "title", "url", "image_url", "site", "comment")
 
-        val parameters = HashMap<String, Any?>()
-        parameters["title"] = recipe.title
-        parameters["url"] = recipe.url
-        parameters["image_url"] = recipe.imageUrl
-        parameters["site"] = recipe.site
-        parameters["recipe_list_id"] = recipe.recipeListId
-        parameters["comment"] = recipe.comment
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("owner_id", userId)
+        parameterSource.addValue("title", recipe.title)
+        parameterSource.addValue("url", recipe.url)
+        parameterSource.addValue("image_url", recipe.imageUrl)
+        parameterSource.addValue("site", recipe.site)
+        parameterSource.addValue("comment", recipe.comment)
 
-        return simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
+        return simpleJdbcInsert.executeAndReturnKey(parameterSource)
+    }
+
+    fun addRecipeToRecipeList(recipeId: Long, recipeListId: Long): Number {
+        val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("recipe_list_recipe")
+
+        val parameters = MapSqlParameterSource()
+        parameters.addValue("recipe_id", recipeId)
+        parameters.addValue("recipe_list_id", recipeListId)
+
+        return simpleJdbcInsert.execute(parameters)
+    }
+
+    fun deleteRecipeFromRecipeList(recipeId: Long, recipeListId: Long): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_id", recipeId)
+        parameterSource.addValue("recipe_list_id", recipeListId)
+
+        val query = """
+            DELETE FROM
+                recipe_list_recipe rlr
+            WHERE
+                rlr.recipe_id = :recipe_id
+            AND
+                rlr.recipe_list_id = :recipe_list_id
+        """.trimIndent()
+
+        return try {
+            return namedTemplate.update(query, parameterSource)
+        } catch (ex: DataAccessException) {
+            0
+        }
     }
 
     fun updateRecipe(recipe: Recipe): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
-        val parameters = HashMap<String, Any?>()
-        parameters["recipe_id"] = recipe.id
-        parameters["title"] = recipe.title
-        parameters["url"] = recipe.url
-        parameters["image_url"] = recipe.imageUrl
-        parameters["site"] = recipe.site
-        parameters["recipe_list_id"] = recipe.recipeListId
-        parameters["comment"] = recipe.comment
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("recipe_id", recipe.id)
+        parameterSource.addValue("title", recipe.title)
+        parameterSource.addValue("url", recipe.url)
+        parameterSource.addValue("image_url", recipe.imageUrl)
+        parameterSource.addValue("site", recipe.site)
+        parameterSource.addValue("comment", recipe.comment)
 
         val query = """
             UPDATE
                 recipe
             SET
-                title = :title, url = :url, image_url = :image_url, site = :site, recipe_list_id = :recipe_list_id, comment = :comment
+                title = :title, url = :url, image_url = :image_url, site = :site, comment = :comment
             WHERE
                 id = :recipe_id
         """.trimIndent()
 
         return try {
-            namedTemplate.update(query, parameters)
+            namedTemplate.update(query, parameterSource)
         } catch (exception: DataAccessException) {
             0
         }
     }
 
-    fun delete(id: Long): Int {
+    fun deleteRecipe(recipeId: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
         val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("recipe_id", id)
+        parameterSource.addValue("recipe_id", recipeId)
 
         return namedTemplate.update("""
             DELETE FROM 
@@ -134,6 +320,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
     fun deleteRecipesForRecipeList(recipeListId: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_list_id", recipeListId)
 
@@ -148,12 +335,15 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
     private fun mapToRecipe(rs: ResultSet): Recipe {
         return Recipe(
                 id = rs.getLong("id"),
+                recipeListId = rs.getLong("recipe_list_id"),
                 title = rs.getString("title"),
                 url = rs.getString("url"),
                 imageUrl = rs.getString("image_url"),
                 site = rs.getString("site"),
                 comment = rs.getString("comment"),
-                recipeListId = rs.getLong("recipe_list_id")
+                shared = rs.getBoolean("shared"),
+                created = rs.getTimestamp("created").toLocalDateTime(),
+                createdBy = rs.getString("created_by")
         )
     }
 }
