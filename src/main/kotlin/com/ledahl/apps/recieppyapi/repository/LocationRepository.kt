@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Location
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -14,6 +15,8 @@ import kotlin.collections.HashMap
 
 @Repository
 class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
+    private val logger = LoggerFactory.getLogger(LocationRepository::class.java)
 
     fun createNewLocation(name: String, address: String?, userId: Long, inviteCode: String): Number? {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
@@ -30,6 +33,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return try {
             simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
         } catch (ex: Exception) {
+            logger.info("createNewLocation (name: $name, address: $address, userId: $userId, inviteCode: $inviteCode) failed", ex)
             return null
         }
     }
@@ -63,7 +67,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getInt("id")
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("findLocationWithId (locationId: $locationId) failed", ex)
             null
         }
     }
@@ -86,7 +91,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getString("invite_code")
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getInviteCode (locationId: $locationId) failed", ex)
             null
         }
     }
@@ -106,8 +112,13 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             	lua.user_account_id = :user_id
         """.trimIndent()
 
-        return namedTemplate.query(query, parameterSource) { rs, _ ->
-            mapToLocation(rs)
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToLocation(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationsForUser (userId: $userId) failed", ex)
+            emptyList()
         }
     }
 
@@ -131,7 +142,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameters) { rs, _ ->
                 mapToLocation(rs)
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getLocation (userId: $userId, locationId: $locationId) failed", ex)
             null
         }
     }
@@ -158,7 +170,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getInt("count") > 0
             } ?: false
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("isUserMemberOfLocation (userId: $userId, locationId: $locationId) failed", ex)
             false
         }
     }
@@ -182,7 +195,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getLong("id")
             }
-        } catch (dae: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationIdFromInviteCode (inviteCode: $inviteCode) failed", ex)
             return null
         }
     }
@@ -210,8 +224,9 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getLong("location_id")
-            } ?: null
-        } catch (dae: DataAccessException) {
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationId (userId: $userId, recipeListId: $recipeListId) failed", ex)
             return null
         }
     }
@@ -235,7 +250,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getString("name") ?: null
             }
-        } catch (dae: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationNameFromInviteCode (inviteCode: $inviteCode) failed", ex)
             return null
         }
     }

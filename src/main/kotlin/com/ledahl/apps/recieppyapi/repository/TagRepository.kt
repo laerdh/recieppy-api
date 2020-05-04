@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Tag
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -14,9 +15,16 @@ import java.sql.ResultSet
 @Repository
 class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
+    private val logger = LoggerFactory.getLogger(TagRepository::class.java)
+
     fun getTags(): List<Tag> {
-        return jdbcTemplate.query("SELECT * FROM tag") { rs, _ ->
-            mapToTag(rs)
+        return try {
+            jdbcTemplate.query("SELECT * FROM tag") { rs, _ ->
+                mapToTag(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getTags failed", ex)
+            emptyList()
         }
     }
 
@@ -39,6 +47,7 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 mapToTag(rs)
             }
         } catch (ex: DataAccessException) {
+            logger.info("getTagsForLocation (locationId: $locationId) failed", ex)
             emptyList()
         }
     }
@@ -59,8 +68,13 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rt.recipe_id = :recipe_id
         """.trimIndent()
 
-        return namedTemplate.query(query, parameterSource) { rs, _ ->
-            mapToTag(rs)
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToTag(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getTagsForRecipe (recipeId: $recipeId) failed", ex)
+            emptyList()
         }
     }
 
@@ -102,7 +116,12 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 recipe_id = :recipe_id
         """.trimIndent()
 
-        return namedTemplate.update(query, parameters)
+        return try {
+            namedTemplate.update(query, parameters)
+        } catch (ex: DataAccessException) {
+            logger.info("deleteTagsForRecipe (recipeId: $recipeId) failed", ex)
+            0
+        }
     }
 
     private fun mapToTag(rs: ResultSet): Tag {

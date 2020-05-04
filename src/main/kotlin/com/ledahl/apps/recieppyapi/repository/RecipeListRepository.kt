@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.RecipeList
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -12,6 +13,8 @@ import java.sql.ResultSet
 
 @Repository
 class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
+    private val logger = LoggerFactory.getLogger(RecipeListRepository::class.java)
 
     fun isRecipeListAvailableToUser(userId: Long, recipeListId: Long): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
@@ -56,6 +59,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rs.getInt("count") > 0
             } ?: false
         } catch (ex: DataAccessException) {
+            logger.info("isRecipeListAvailableToUser (userId: $userId, recipeListId: $recipeListId) failed")
             false
         }
     }
@@ -86,6 +90,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rs.getInt("count") > 0
             } ?: false
         } catch (ex: DataAccessException) {
+            logger.info("isRecipeListEditableForUser (userId: $userId, recipeListId: $recipeListId) failed", ex)
             false
         }
     }
@@ -128,7 +133,8 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 mapToRecipeList(rs)
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getRecipeList (userId: $userId, recipeListId: $recipeListId) failed", ex)
             null
         }
     }
@@ -171,6 +177,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 mapToRecipeList(rs)
             }
         } catch (ex: DataAccessException) {
+            logger.info("getRecipeLists (userId: $userId, locationId: $locationId) failed", ex)
             emptyList()
         }
     }
@@ -206,12 +213,17 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_list_id", recipeListId)
 
-        return namedTemplate.update("""
-            DELETE FROM 
-                recipe_list rl
-            WHERE 
-                rl.id = :recipe_list_id
-        """.trimIndent(), parameterSource)
+        return try {
+            namedTemplate.update("""
+                DELETE FROM 
+                    recipe_list rl
+                WHERE 
+                    rl.id = :recipe_list_id
+            """.trimIndent(), parameterSource)
+        } catch (ex: DataAccessException) {
+            logger.info("deleteRecipeList (recipeListId: $recipeListId) failed", ex)
+            0
+        }
     }
 
     fun deleteLocationRecipeList(recipeListId: Long, locationId: Long): Int {
@@ -221,13 +233,18 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("recipe_list_id", recipeListId)
         parameterSource.addValue("location_id", locationId)
 
-        return namedTemplate.update("""
-            DELETE FROM 
-                location_recipe_list lrl
-            WHERE 
-                lrl.recipe_list_id = :recipe_list_id
-                AND lrl.location_id = :location_id
-        """.trimIndent(), parameterSource)
+        return try {
+            namedTemplate.update("""
+                DELETE FROM 
+                    location_recipe_list lrl
+                WHERE 
+                    lrl.recipe_list_id = :recipe_list_id
+                    AND lrl.location_id = :location_id
+            """.trimIndent(), parameterSource)
+        } catch (ex: DataAccessException) {
+            logger.info("deleteLocationRecipeList (recipeListId: $recipeListId, locationId: $locationId) failed", ex)
+            0
+        }
     }
 
     fun renameRecipeList(recipeListId: Long, newName: String): Int {
@@ -237,7 +254,8 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         parameterSource.addValue("recipe_list_id", recipeListId)
         parameterSource.addValue("new_name", newName)
 
-        return namedTemplate.update("""
+        return try {
+            namedTemplate.update("""
                 UPDATE 
                     recipe_list
                 SET 
@@ -245,6 +263,10 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 WHERE 
                     id = :recipe_list_id
             """.trimIndent(), parameterSource)
+        } catch (ex: DataAccessException) {
+            logger.info("renameRecipeList (recipeListId: $recipeListId, newName: $newName) failed", ex)
+            0
+        }
     }
 
     private fun mapToRecipeList(rs: ResultSet): RecipeList {

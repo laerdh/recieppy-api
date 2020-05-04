@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.input.RecipeInput
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -13,6 +14,8 @@ import java.sql.ResultSet
 
 @Repository
 class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
+    private val logger = LoggerFactory.getLogger(RecipeRepository::class.java)
 
     fun isRecipeAvailableToUser(userId: Long, recipeId: Long): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
@@ -57,6 +60,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rs.getBoolean("accessible")
             } ?: false
         } catch (ex: DataAccessException) {
+            logger.info("isRecipeAvailableToUser (userId: $userId, recipeId: $recipeId) failed", ex)
             false
         }
     }
@@ -88,6 +92,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 rs.getInt("count") > 0
             } ?: false
         } catch (ex: DataAccessException) {
+            logger.info("isRecipeEditableForUser (userId: $userId, recipeId: $recipeId) failed", ex)
             false
         }
     }
@@ -131,6 +136,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 mapToRecipe(rs)
             }
         } catch (ex: DataAccessException) {
+            logger.info("getRecipesForUser (userId: $userId, locationId: $locationId) failed", ex)
             emptyList()
         }
     }
@@ -159,6 +165,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 mapToRecipe(rs)
             }
         } catch (ex: DataAccessException) {
+            logger.info("getRecipesForRecipeList (userId: $userId, recipeListId: $recipeListId) failed", ex)
             emptyList()
         }
     }
@@ -192,7 +199,8 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 mapToRecipe(rs)
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getRecipe (userId: $userId, recipeId: $recipeId) failed", ex)
             null
         }
     }
@@ -222,6 +230,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 mapToRecipe(rs)
             }
         } catch (ex: DataAccessException) {
+            logger.info("getSharedRecipes (userId: $userId) failed", ex)
             emptyList()
         }
     }
@@ -273,6 +282,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return try {
             return namedTemplate.update(query, parameterSource)
         } catch (ex: DataAccessException) {
+            logger.info("deleteRecipeFromRecipeList (recipeId: $recipeId, recipeListId: $recipeListId) failed", ex)
             0
         }
     }
@@ -299,7 +309,8 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.update(query, parameterSource)
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("updateRecipe (recipeId: ${recipe.id}) failed", ex)
             0
         }
     }
@@ -310,12 +321,17 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_id", recipeId)
 
-        return namedTemplate.update("""
-            DELETE FROM 
-                recipe r
-            WHERE 
-                r.id = :recipe_id
-        """.trimIndent(), parameterSource)
+        return try {
+            namedTemplate.update("""
+                DELETE FROM 
+                    recipe r
+                WHERE 
+                    r.id = :recipe_id
+            """.trimIndent(), parameterSource)
+        } catch (ex: DataAccessException) {
+            logger.info("deleteRecipe (recipeId: $recipeId) failed", ex)
+            0
+        }
     }
 
     fun deleteRecipesForRecipeList(recipeListId: Long): Int {
@@ -324,12 +340,17 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("recipe_list_id", recipeListId)
 
-        return namedTemplate.update("""
-            DELETE FROM 
-                recipe r
-            WHERE 
-                r.recipe_list_id = :recipe_list_id
-        """.trimIndent(), parameterSource)
+        return try {
+            namedTemplate.update("""
+                DELETE FROM 
+                    recipe r
+                WHERE 
+                    r.recipe_list_id = :recipe_list_id
+            """.trimIndent(), parameterSource)
+        } catch (ex: DataAccessException) {
+            logger.info("deleteRecipesForRecipeList (recipeListId: $recipeListId) failed", ex)
+            0
+        }
     }
 
     private fun mapToRecipe(rs: ResultSet): Recipe {
