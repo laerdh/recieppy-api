@@ -59,7 +59,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("user_account")
                 .usingGeneratedKeyColumns("id")
-                .usingColumns("subject, first_name", "last_name", "email")
+                .usingColumns("subject", "first_name", "last_name", "email")
 
         val parameters = HashMap<String, Any?>()
         parameters["subject"] = user.subject
