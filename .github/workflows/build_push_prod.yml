@@ -1,0 +1,80 @@
+
+name: build-push-prod
+
+on:
+  push:
+    branches:
+      - master
+    repository_dispatch:
+        types: run-workflow
+    
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-java@v1
+      with:
+        java-version: '11'
+
+    - name: Set app version
+      run: |
+        export APP_VERSION="$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print tolower(a[2]) }')"
+        echo $APP_VERSION >> app_version.txt
+        echo "::set-env name=VERSION_NAME::$APP_VERSION"
+    - uses: actions/upload-artifact@v2
+      with:
+        name: app_version
+        path: app_version.txt
+
+    - shell: bash
+      run: mkdir src/main/resources/config
+
+    - name: Fetch Firebase Service Account file
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+        chmod 700 ~/.ssh/id_rsa
+        eval $(ssh-agent -s)
+        ssh-add ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        scp ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.FIREBASE_SERVICE_ACCOUNT_FILE_PATH }} src/main/resources/config
+
+    - name: Gradle build
+      uses: eskatos/gradle-command-action@v1
+      with:
+        arguments: bootJar
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v1.1.0
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: laerdh/recieppy-api
+        tags: ${{ env.VERSION_NAME }}
+
+  push:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get app version
+      uses: actions/download-artifact@v2
+      with:
+        name: app_version
+
+    - shell: bash
+      run: |
+        export APP_VERSION=`cat app_version.txt`
+        echo "::set-env name=VERSION_NAME::$APP_VERSION"
+    
+    - name: Deploy to prod
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: ${{ secrets.SSH_DEPLOY }} -r ${{ secrets.DOCKER_USERNAME }} -t ${{ secrets.DOCKER_PASSWORD }} -i ${{ env.VERSION_NAME }} -l ${{ secrets.DATABASE_URL }} -d ${{ secrets.DATABASE_SCHEMA }} -u ${{ secrets.DATABASE_USER }} -p ${{ secrets.DATABASE_PASSWORD }} -v ${{ secrets.OIDC_JWT_ENDPOINT }}

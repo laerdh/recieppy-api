@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.enums.UserRole
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -13,14 +14,22 @@ import java.sql.ResultSet
 
 @Repository
 class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
+    private val logger = LoggerFactory.getLogger(UserRepository::class.java)
+
     fun getUsers(): List<User> {
-        return jdbcTemplate.query("""
-            SELECT u.id, phone_number, first_name, last_name, email, external_id
-            FROM user_account u
-            LEFT JOIN user_role ur ON u.id = ur.user_id
-            LEFT JOIN role r ON ur.role_id = r.id
+        return try {
+            jdbcTemplate.query("""
+                SELECT u.id, phone_number, first_name, last_name, email, external_id
+                FROM user_account u
+                LEFT JOIN user_role ur ON u.id = ur.user_id
+                LEFT JOIN role r ON ur.role_id = r.id
         """.trimIndent()) { rs, _ ->
-            mapToUser(rs)
+                mapToUser(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getUsers failed", ex)
+            emptyList()
         }
     }
 
@@ -40,7 +49,8 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             """.trimIndent(), parameters) { rs, _ ->
                 mapToUser(rs)
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getUserBySubject (subject: $subject) failed", ex)
             null
         }
     }
@@ -49,6 +59,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("user_account")
                 .usingGeneratedKeyColumns("id")
+                .usingColumns("subject", "first_name", "last_name", "email")
 
         val parameters = HashMap<String, Any?>()
         parameters["subject"] = user.subject
@@ -82,7 +93,8 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 SET push_token = :push_token
                 WHERE id = :id
             """.trimIndent(), parameterSource)
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("savePushToken (pushToken: $pushToken) failed", ex)
             null
         }
     }

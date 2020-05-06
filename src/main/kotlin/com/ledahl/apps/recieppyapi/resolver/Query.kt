@@ -31,12 +31,17 @@ class Query(@Autowired private val userService: UserService,
 
     fun getRecipes(locationId: Long, env: DataFetchingEnvironment): List<Recipe> {
         val user = env.getContext<AuthContext>().user
-        return recipeService.getRecipesForLocation(user = user, locationId = locationId)
+        return recipeService.getRecipesForUser(user = user, locationId = locationId)
+    }
+
+    fun getSharedRecipes(env: DataFetchingEnvironment): List<Recipe> {
+        val user = env.getContext<AuthContext>().user
+        return recipeService.getSharedRecipes(user.id)
     }
 
     fun getRecipeList(id: Long, env: DataFetchingEnvironment): RecipeList? {
         val user = env.getContext<AuthContext>().user
-        return recipeListService.getRecipeList(user = user, id = id)
+        return recipeListService.getRecipeList(user = user, recipeListId = id)
     }
 
     fun getRecipeLists(locationId: Long, env: DataFetchingEnvironment): List<RecipeList> {
@@ -48,9 +53,9 @@ class Query(@Autowired private val userService: UserService,
         return recipeService.getTags()
     }
 
-    fun getInviteCode(env: DataFetchingEnvironment): String {
+    fun getTagsForLocation(locationId: Long, env: DataFetchingEnvironment): List<Tag> {
         val user = env.getContext<AuthContext>().user
-        return locationService.getInviteCode(user = user)
+        return recipeService.getTagsForLocation(user = user, locationId = locationId)
     }
 
     fun getLocations(env: DataFetchingEnvironment): List<Location> {

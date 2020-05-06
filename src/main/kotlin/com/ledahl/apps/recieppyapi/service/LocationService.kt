@@ -48,16 +48,6 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         return locationRepository.addUserToLocation(userId, locationId)
     }
 
-    fun getInviteCode(user: User): String {
-        val locations = locationRepository.getLocationsForUser(user.id)
-
-        if (locations.isEmpty()) {
-            throw GraphQLException("User has no locations")
-        }
-
-        return locations.first().inviteCode
-    }
-
     fun acceptInviteForUser(user: User, inviteCode: String): Boolean {
         val locationIdForInviteCode = locationRepository.getLocationIdFromInviteCode(inviteCode)
 

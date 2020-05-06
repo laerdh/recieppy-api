@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Location
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -14,6 +15,8 @@ import kotlin.collections.HashMap
 
 @Repository
 class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+
+    private val logger = LoggerFactory.getLogger(LocationRepository::class.java)
 
     fun createNewLocation(name: String, address: String?, userId: Long, inviteCode: String): Number? {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
@@ -30,6 +33,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return try {
             simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
         } catch (ex: Exception) {
+            logger.info("createNewLocation (name: $name, address: $address, userId: $userId, inviteCode: $inviteCode) failed", ex)
             return null
         }
     }
@@ -63,7 +67,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getInt("id")
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("findLocationWithId (locationId: $locationId) failed", ex)
             null
         }
     }
@@ -86,7 +91,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getString("invite_code")
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getInviteCode (locationId: $locationId) failed", ex)
             null
         }
     }
@@ -106,8 +112,13 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             	lua.user_account_id = :user_id
         """.trimIndent()
 
-        return namedTemplate.query(query, parameterSource) { rs, _ ->
-            mapToLocation(rs)
+        return try {
+            namedTemplate.query(query, parameterSource) { rs, _ ->
+                mapToLocation(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationsForUser (userId: $userId) failed", ex)
+            emptyList()
         }
     }
 
@@ -131,7 +142,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameters) { rs, _ ->
                 mapToLocation(rs)
             }
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getLocation (userId: $userId, locationId: $locationId) failed", ex)
             null
         }
     }
@@ -158,65 +170,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getInt("count") > 0
             } ?: false
-        } catch (exception: DataAccessException) {
-            false
-        }
-    }
-
-    fun isRecipeListInUsersLocation(userId: Long, recipeListId: Long): Boolean {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("user_id", userId)
-        parameterSource.addValue("recipe_list_id", recipeListId)
-
-        val query = """
-            SELECT
-                COUNT(*)
-            FROM
-                recipe_list rl
-                INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
-                INNER JOIN location l ON lrl.location_id = l.id
-                INNER JOIN location_user_account lua ON l.id = lua.location_id
-            WHERE
-                lua.user_account_id = :user_id
-                AND rl.id = :recipe_list_id
-        """.trimIndent()
-
-        return try {
-            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                rs.getInt("count") > 0
-            } ?: false
-        } catch (exception: DataAccessException) {
-            false
-        }
-    }
-
-    fun isRecipeInUsersLocation(userId: Long, recipeId: Long): Boolean {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-
-        val parameters = MapSqlParameterSource()
-        parameters.addValue("user_id", userId)
-        parameters.addValue("recipe_id", recipeId)
-
-        val query = """
-            SELECT
-                COUNT(*)
-            FROM
-                recipe r
-                INNER JOIN recipe_list rl ON r.recipe_list_id = rl.id
-                INNER JOIN location_recipe_list lrl ON rl.id = lrl.recipe_list_id
-                INNER JOIN location_user_account lua ON lrl.location_id = lua.location_id
-            WHERE
-                lua.user_account_id = :user_id
-                AND r.id = :recipe_id
-        """.trimIndent()
-
-        return try {
-            namedTemplate.queryForObject(query, parameters) { rs, _ ->
-                rs.getInt("count") > 0
-            } ?: false
-        } catch (exception: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("isUserMemberOfLocation (userId: $userId, locationId: $locationId) failed", ex)
             false
         }
     }
@@ -240,12 +195,13 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getLong("id")
             }
-        } catch (dae: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationIdFromInviteCode (inviteCode: $inviteCode) failed", ex)
             return null
         }
     }
 
-    fun getLocationId(userId: Long, recipeListId: Long): Long {
+    fun getLocationId(userId: Long, recipeListId: Long): Long? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
 
@@ -268,9 +224,10 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getLong("location_id")
-            } ?: 0
-        } catch (dae: DataAccessException) {
-            return 0
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationId (userId: $userId, recipeListId: $recipeListId) failed", ex)
+            return null
         }
     }
 
@@ -293,7 +250,8 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
                 rs.getString("name") ?: null
             }
-        } catch (dae: DataAccessException) {
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationNameFromInviteCode (inviteCode: $inviteCode) failed", ex)
             return null
         }
     }

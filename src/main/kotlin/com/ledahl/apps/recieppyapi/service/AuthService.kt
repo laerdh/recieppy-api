@@ -3,6 +3,8 @@ package com.ledahl.apps.recieppyapi.service
 import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.repository.LocationRepository
+import com.ledahl.apps.recieppyapi.repository.RecipeListRepository
+import com.ledahl.apps.recieppyapi.repository.RecipeRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
@@ -10,7 +12,9 @@ import org.springframework.stereotype.Service
 
 @Service
 class AuthService(@Autowired private val userService: UserService,
-                  @Autowired private val locationRepository: LocationRepository) {
+                  @Autowired private val locationRepository: LocationRepository,
+                  @Autowired private val recipeListRepository: RecipeListRepository,
+                  @Autowired private val recipeRepository: RecipeRepository) {
     fun handleUserAuthentication(authentication: Authentication): User {
         val auth = authentication as? JwtAuthenticationToken ?: throw NotAuthorizedException("User not authorized")
         val claims = auth.token.claims
@@ -38,11 +42,19 @@ class AuthService(@Autowired private val userService: UserService,
         return locationRepository.isUserMemberOfLocation(userId = user.id, locationId = locationId)
     }
 
-    fun isRecipeListInUsersLocation(user: User, recipeListId: Long): Boolean {
-        return locationRepository.isRecipeListInUsersLocation(userId = user.id, recipeListId = recipeListId)
+    fun isRecipeListAvailableToUser(user: User, recipeListId: Long): Boolean {
+        return recipeListRepository.isRecipeListAvailableToUser(userId = user.id, recipeListId = recipeListId)
     }
 
-    fun isRecipeInUsersLocation(user: User, recipeId: Long): Boolean {
-        return locationRepository.isRecipeInUsersLocation(userId = user.id, recipeId = recipeId)
+    fun isRecipeAvailableToUser(user: User, recipeId: Long): Boolean {
+        return recipeRepository.isRecipeAvailableToUser(userId = user.id, recipeId = recipeId)
+    }
+
+    fun isRecipeListEditableForUser(user: User, recipeListId: Long): Boolean {
+        return recipeListRepository.isRecipeListEditableForUser(userId = user.id, recipeListId = recipeListId)
+    }
+
+    fun isRecipeEditableForUser(user: User, recipeId: Long): Boolean {
+        return recipeRepository.isRecipeEditableForUser(userId = user.id, recipeId = recipeId)
     }
 }
