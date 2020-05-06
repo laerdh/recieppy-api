@@ -1,4 +1,4 @@
-[![pipeline status](https://gitlab.com/laerdh/recieppy-api/badges/master/pipeline.svg)](https://gitlab.com/laerdh/recieppy-api/commits/master)
+![build-push-prod](https://github.com/laerdh/recieppy-api/workflows/build-push-prod/badge.svg?branch=master)
 # recieppy-api
 
 GraphQL API (OAuth2 Resource Server) for the Recieppy mobile apps.
