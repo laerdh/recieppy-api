@@ -12,7 +12,8 @@ type RecipePlanEvent {
 
 input RecipePlanEventInput {
     recipeId: ID!
-    date: Date!
+    currentDate: Date!
+    newDate: Date
 }
 
 extend type Query {
