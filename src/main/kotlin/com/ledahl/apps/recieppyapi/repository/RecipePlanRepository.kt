@@ -59,7 +59,7 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         val parameters = MapSqlParameterSource()
         parameters["location_id"] = locationId
-        parameters["date"] = recipePlanEvent.date
+        parameters["date"] = recipePlanEvent.currentDate
         parameters["recipe_id"] = recipePlanEvent.recipeId
 
         return simpleJdbcInsert.execute(parameters) > 0
@@ -105,7 +105,7 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         val parameters = MapSqlParameterSource()
         parameters["recipe_id"] = recipePlanEvent.recipeId
         parameters["location_id"] = locationId
-        parameters["date"] = Date.valueOf(recipePlanEvent.date)
+        parameters["date"] = Date.valueOf(recipePlanEvent.currentDate)
 
         val query = """
             DELETE FROM
@@ -120,7 +120,7 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             val deleted = namedTemplate.update(query, parameters)
             return deleted > 0
         } catch (ex: DataAccessException) {
-            logger.info("deleteRecipePlanEvent (locationId: $locationId, recipeId: ${recipePlanEvent.recipeId}, date: ${recipePlanEvent.date}) failed", ex)
+            logger.info("deleteRecipePlanEvent (locationId: $locationId, recipeId: ${recipePlanEvent.recipeId}, date: ${recipePlanEvent.currentDate}) failed", ex)
             false
         }
     }

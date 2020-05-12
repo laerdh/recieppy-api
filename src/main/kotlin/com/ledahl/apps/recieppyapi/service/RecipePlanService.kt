@@ -29,14 +29,14 @@ class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanR
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
     fun createRecipePlanEvent(user: User, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
-        val recipePlan = getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
+        val recipePlan = getRecipePlan(locationId = locationId, date = recipePlanEvent.currentDate)
 
         val existingRecipePlanEventForDate = recipePlanRepository
                 .getRecipePlanEventsForWeek(locationId = locationId, weekNumber = recipePlan.weekNumber)
-                .any { it.date == recipePlanEvent.date }
+                .any { it.date == recipePlanEvent.currentDate }
 
         if (existingRecipePlanEventForDate) {
-            throw IllegalArgumentException("Recipe plan event with date (${recipePlanEvent.date}) already exists.")
+            throw IllegalArgumentException("Recipe plan event with date (${recipePlanEvent.currentDate}) already exists.")
         }
 
         recipePlanRepository.createRecipePlanEvent(locationId = locationId, recipePlanEvent = recipePlanEvent)
@@ -46,21 +46,22 @@ class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanR
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
     fun updateRecipePlanEvent(user: User, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
-        val recipePlan = getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
+        val newRecipePlanEventDate = recipePlanEvent.newDate ?: throw IllegalArgumentException("Please provide new date")
+        val recipePlan = getRecipePlan(locationId = locationId, date = newRecipePlanEventDate)
 
         val existingRecipePlanEventsForWeek = recipePlanRepository.getRecipePlanEventsForWeek(
                 locationId = locationId,
                 weekNumber = recipePlan.weekNumber
         )
-        val existingRecipePlanEvent = existingRecipePlanEventsForWeek.find { it.recipeId == recipePlanEvent.recipeId }
-                ?: throw IllegalArgumentException("Recipe does not exist")
+        val existingRecipePlanEvent = existingRecipePlanEventsForWeek.find { it.recipeId == recipePlanEvent.recipeId && it.date == recipePlanEvent.currentDate }
+                ?: throw IllegalArgumentException("No recipeId (${recipePlanEvent.recipeId}) exists on this date (${recipePlanEvent.currentDate})")
 
         val recipePlanEvents = HashMap<Long, List<LocalDate>>()
 
-        existingRecipePlanEventsForWeek.find { it.date == recipePlanEvent.date }?.let {
+        existingRecipePlanEventsForWeek.find { it.date == newRecipePlanEventDate }?.let {
             recipePlanEvents[it.recipeId] = listOf(it.date, existingRecipePlanEvent.date)
         }
-        recipePlanEvents[recipePlanEvent.recipeId] = listOf(existingRecipePlanEvent.date, recipePlanEvent.date)
+        recipePlanEvents[recipePlanEvent.recipeId] = listOf(existingRecipePlanEvent.date, newRecipePlanEventDate)
 
         recipePlanRepository.updateRecipePlanEvent(locationId = locationId, recipePlanEvents = recipePlanEvents)
 
@@ -70,7 +71,7 @@ class RecipePlanService(@Autowired private val recipePlanRepository: RecipePlanR
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
     fun deleteRecipePlanEvent(user: User, locationId: Long, recipePlanEvent: RecipePlanEventInput): RecipePlan {
         recipePlanRepository.deleteRecipePlanEvent(locationId = locationId, recipePlanEvent = recipePlanEvent)
-        return getRecipePlan(locationId = locationId, date = recipePlanEvent.date)
+        return getRecipePlan(locationId = locationId, date = recipePlanEvent.currentDate)
     }
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
