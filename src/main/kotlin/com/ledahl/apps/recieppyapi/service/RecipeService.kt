@@ -98,7 +98,7 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
                 recipeListId = recipeInput.recipeListId,
                 title = recipeInput.title,
                 url = recipeInput.url,
-                imageUrl = recipeInput.url,
+                imageUrl = recipeInput.imageUrl,
                 site = recipeInput.site,
                 comment = recipeInput.comment
         )
