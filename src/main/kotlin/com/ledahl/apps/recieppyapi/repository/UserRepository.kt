@@ -55,6 +55,33 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
+    fun getUsersInLocation(locationId: Long): List<User> {
+        val namedJdbcTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters.addValue("location_id", locationId)
+
+        val query = """
+                SELECT
+                    u.id, u.phone_number, u.first_name, u.last_name, u.email, u.subject, r.name AS user_role
+                FROM
+                    user_account u
+                    INNER JOIN location_user_account lua ON u.id = lua.user_account_id
+                    INNER JOIN user_role ur ON u.id = ur.user_id
+                    INNER JOIN role r ON ur.role_id = r.id
+                WHERE lua.location_id = :location_id
+        """.trimIndent()
+
+        return try {
+            namedJdbcTemplate.query(query, parameters) { rs, _ ->
+                mapToUser(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getUsersByLocation (locationId: $locationId) failed", ex)
+            emptyList()
+        }
+    }
+
     fun save(user: User): Number {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("user_account")

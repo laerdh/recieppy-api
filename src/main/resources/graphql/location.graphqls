@@ -6,6 +6,7 @@ type Location {
     recipeLists: [RecipeList]
     recipePlan: RecipePlan
     inviteCode: String!
+    members: [UserProfile]
 }
 
 input NewLocationInput {
