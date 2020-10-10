@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Location
+import com.ledahl.apps.recieppyapi.model.mappers.Mapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
@@ -14,7 +15,8 @@ import java.util.*
 import kotlin.collections.HashMap
 
 @Repository
-class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
+                         @Autowired private val mapper: Mapper<ResultSet, Location>) {
 
     private val logger = LoggerFactory.getLogger(LocationRepository::class.java)
 
@@ -135,7 +137,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.query(query, parameterSource) { rs, _ ->
-                mapToLocation(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getLocationsForUser (userId: $userId) failed", ex)
@@ -161,7 +163,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.queryForObject(query, parameters) { rs, _ ->
-                mapToLocation(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getLocation (userId: $userId, locationId: $locationId) failed", ex)
@@ -275,15 +277,5 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             logger.info("getLocationNameFromInviteCode (inviteCode: $inviteCode) failed", ex)
             return null
         }
-    }
-
-    private fun mapToLocation(rs: ResultSet): Location {
-        return Location(
-                id = rs.getLong("id"),
-                name = rs.getString("name"),
-                address = rs.getString("address"),
-                owner = rs.getLong("created_by"),
-                inviteCode = rs.getString("invite_code")
-        )
     }
 }

@@ -1,7 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.User
-import com.ledahl.apps.recieppyapi.model.enums.UserRole
+import com.ledahl.apps.recieppyapi.model.mappers.Mapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
@@ -13,7 +13,8 @@ import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 
 @Repository
-class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
+                     @Autowired private val mapper: Mapper<ResultSet, User>) {
 
     private val logger = LoggerFactory.getLogger(UserRepository::class.java)
 
@@ -25,7 +26,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 LEFT JOIN user_role ur ON u.id = ur.user_id
                 LEFT JOIN role r ON ur.role_id = r.id
         """.trimIndent()) { rs, _ ->
-                mapToUser(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getUsers failed", ex)
@@ -47,7 +48,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 INNER JOIN role r ON ur.role_id = r.id
                 WHERE u.subject = :subject
             """.trimIndent(), parameters) { rs, _ ->
-                mapToUser(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getUserBySubject (subject: $subject) failed", ex)
@@ -74,7 +75,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedJdbcTemplate.query(query, parameters) { rs, _ ->
-                mapToUser(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getUsersByLocation (locationId: $locationId) failed", ex)
@@ -124,17 +125,5 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             logger.info("savePushToken (pushToken: $pushToken) failed", ex)
             null
         }
-    }
-
-    private fun mapToUser(rs: ResultSet): User? {
-        return User(
-                id = rs.getLong("id"),
-                subject = rs.getString("subject") ?: "",
-                firstName = rs.getString("first_name"),
-                lastName = rs.getString("last_name"),
-                email = rs.getString("email"),
-                phoneNumber = rs.getString("phone_number") ?: "",
-                role = UserRole.valueOf(rs.getString("user_role"))
-        )
     }
 }

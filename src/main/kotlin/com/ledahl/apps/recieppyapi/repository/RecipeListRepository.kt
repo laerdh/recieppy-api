@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.RecipeList
+import com.ledahl.apps.recieppyapi.model.mappers.Mapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
@@ -12,7 +13,8 @@ import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 
 @Repository
-class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
+                           @Autowired private val mapper: Mapper<ResultSet, RecipeList>) {
 
     private val logger = LoggerFactory.getLogger(RecipeListRepository::class.java)
 
@@ -131,7 +133,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                mapToRecipeList(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getRecipeList (userId: $userId, recipeListId: $recipeListId) failed", ex)
@@ -174,7 +176,7 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.query(query, parameterSource) { rs, _ ->
-                mapToRecipeList(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getRecipeLists (userId: $userId, locationId: $locationId) failed", ex)
@@ -267,15 +269,5 @@ class RecipeListRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             logger.info("renameRecipeList (recipeListId: $recipeListId, newName: $newName) failed", ex)
             0
         }
-    }
-
-    private fun mapToRecipeList(rs: ResultSet): RecipeList {
-        return RecipeList(
-                id = rs.getLong("id"),
-                name = rs.getString("name"),
-                shared = rs.getBoolean("shared"),
-                created = rs.getTimestamp("created").toLocalDateTime(),
-                createdBy = rs.getString("created_by")
-        )
     }
 }
