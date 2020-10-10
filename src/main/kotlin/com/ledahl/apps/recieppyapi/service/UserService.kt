@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.service
 
 import com.ledahl.apps.recieppyapi.exception.NotAuthorizedException
 import com.ledahl.apps.recieppyapi.model.User
+import com.ledahl.apps.recieppyapi.model.UserProfile
 import com.ledahl.apps.recieppyapi.model.enums.UserRole
 import com.ledahl.apps.recieppyapi.repository.UserRepository
 import graphql.GraphQLException
@@ -21,6 +22,12 @@ class UserService(@Autowired private val userRepository: UserRepository) {
         return userRepository.getUserBySubject(subject)
     }
 
+    fun getUsersInLocation(locationId: Long): List<UserProfile> {
+        return userRepository.getUsersInLocation(locationId).map {
+            mapToUserProfile(it)
+        }
+    }
+
     fun createUser(user: User): User {
         val newUserId = userRepository.save(user).toLong()
         userRepository.saveRoleForUser(newUserId)
@@ -34,5 +41,13 @@ class UserService(@Autowired private val userRepository: UserRepository) {
             throw GraphQLException("Could not save pushToken for user with id: $user.id")
         }
         return tokenSaved
+    }
+
+    private fun mapToUserProfile(user: User): UserProfile {
+        return UserProfile(
+                firstName = user.firstName,
+                lastName = user.lastName,
+                email = user.email
+        )
     }
 }
