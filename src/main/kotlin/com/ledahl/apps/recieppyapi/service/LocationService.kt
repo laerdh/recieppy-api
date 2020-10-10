@@ -6,6 +6,7 @@ import com.ledahl.apps.recieppyapi.model.input.NewLocationInput
 import com.ledahl.apps.recieppyapi.repository.LocationRepository
 import graphql.GraphQLException
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -28,7 +29,7 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
                         id = locationId.toLong(),
                         name = newLocationInput.name,
                         address = newLocationInput.address,
-                        owner = userId.toInt(),
+                        owner = userId,
                         inviteCode = inviteCode)
             } else {
                 throw GraphQLException("Could not insert userId $userId to location ${newLocationInput.name}")
@@ -46,6 +47,19 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         }
 
         return locationRepository.addUserToLocation(userId, locationId)
+    }
+
+    @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
+    fun removeUserFromLocation(user: User, locationId: Long): List<Location> {
+        val userId = user.id
+        val location = locationRepository.getLocation(userId, locationId)
+
+        if (location?.owner == userId) {
+            throw GraphQLException("Could not remove user $userId from location. User is owner.")
+        }
+
+        locationRepository.removeUserFromLocation(userId, locationId)
+        return locationRepository.getLocationsForUser(userId)
     }
 
     fun acceptInviteForUser(user: User, inviteCode: String): Boolean {

@@ -17,6 +17,7 @@ input NewLocationInput {
 extend type Mutation {
     newLocation(input: NewLocationInput): Location
     acceptInvite(inviteCode: String): Boolean
+    removeUserFromLocation(id: ID!): [Location]!
 }
 
 extend type Query {
