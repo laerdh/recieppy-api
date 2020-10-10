@@ -49,6 +49,27 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
         return simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
     }
 
+    fun removeUserFromLocation(userId: Long, locationId: Long): Int {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+        val parameters = MapSqlParameterSource()
+        parameters.addValue("user_id", userId)
+        parameters.addValue("location_id", locationId)
+
+        val query = """
+            DELETE FROM
+                location_user_account
+            WHERE
+                user_account_id = :user_id AND location_id = :location_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.update(query, parameters)
+        } catch (ex: DataAccessException) {
+            logger.info("removeUserFromLocation (userId: $userId, locationId: $locationId) failed", ex)
+            0
+        }
+    }
+
     fun findLocationWithId(locationId: Long): Int? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
@@ -261,7 +282,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
                 id = rs.getLong("id"),
                 name = rs.getString("name"),
                 address = rs.getString("address"),
-                owner = rs.getInt("created_by"),
+                owner = rs.getLong("created_by"),
                 inviteCode = rs.getString("invite_code")
         )
     }
