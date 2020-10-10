@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Tag
+import com.ledahl.apps.recieppyapi.model.mappers.Mapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
@@ -13,14 +14,15 @@ import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 
 @Repository
-class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
+                    @Autowired private val mapper: Mapper<ResultSet, Tag>){
 
     private val logger = LoggerFactory.getLogger(TagRepository::class.java)
 
     fun getTags(): List<Tag> {
         return try {
             jdbcTemplate.query("SELECT * FROM tag") { rs, _ ->
-                mapToTag(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getTags failed", ex)
@@ -44,7 +46,7 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.query(query, parameterSource) { rs, _ ->
-                mapToTag(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getTagsForLocation (locationId: $locationId) failed", ex)
@@ -70,7 +72,7 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.query(query, parameterSource) { rs, _ ->
-                mapToTag(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getTagsForRecipe (recipeId: $recipeId) failed", ex)
@@ -122,12 +124,5 @@ class TagRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             logger.info("deleteTagsForRecipe (recipeId: $recipeId) failed", ex)
             0
         }
-    }
-
-    private fun mapToTag(rs: ResultSet): Tag {
-        return Tag(
-                id = rs.getLong("id"),
-                text = rs.getString("text")
-        )
     }
 }

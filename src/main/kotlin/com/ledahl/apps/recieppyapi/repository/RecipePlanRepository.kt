@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.RecipePlanEvent
 import com.ledahl.apps.recieppyapi.model.input.RecipePlanEventInput
+import com.ledahl.apps.recieppyapi.model.mappers.Mapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
@@ -13,10 +14,12 @@ import org.springframework.jdbc.core.namedparam.set
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 import java.sql.Date
+import java.sql.ResultSet
 import java.time.LocalDate
 
 @Repository
-class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
+                           @Autowired private val mapper: Mapper<ResultSet, RecipePlanEvent>) {
 
     private val logger = LoggerFactory.getLogger(RecipePlanRepository::class.java)
 
@@ -42,10 +45,7 @@ class RecipePlanRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.query(query, parameters) { rs, _ ->
-                RecipePlanEvent(
-                        date = rs.getDate("date").toLocalDate(),
-                        recipeId = rs.getLong("recipe_id")
-                )
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getRecipePlanEventsForWeek (locationId: $locationId, weekNumber: $weekNumber) failed", ex)

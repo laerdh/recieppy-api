@@ -2,6 +2,7 @@ package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.input.RecipeInput
+import com.ledahl.apps.recieppyapi.model.mappers.Mapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
@@ -13,7 +14,8 @@ import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 
 @Repository
-class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
+class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
+                       @Autowired private val mapper: Mapper<ResultSet, Recipe>) {
 
     private val logger = LoggerFactory.getLogger(RecipeRepository::class.java)
 
@@ -133,7 +135,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.query(query, parameterSource) { rs, _ ->
-                mapToRecipe(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getRecipesForUser (userId: $userId, locationId: $locationId) failed", ex)
@@ -162,7 +164,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.query(query, parameterSource) { rs, _ ->
-                mapToRecipe(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getRecipesForRecipeList (userId: $userId, recipeListId: $recipeListId) failed", ex)
@@ -197,7 +199,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                mapToRecipe(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getRecipe (userId: $userId, recipeId: $recipeId) failed", ex)
@@ -227,7 +229,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
 
         return try {
             namedTemplate.query(query, parameterSource) { rs, _ ->
-                mapToRecipe(rs)
+                mapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getSharedRecipes (userId: $userId) failed", ex)
@@ -351,20 +353,5 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate) {
             logger.info("deleteRecipesForRecipeList (recipeListId: $recipeListId) failed", ex)
             0
         }
-    }
-
-    private fun mapToRecipe(rs: ResultSet): Recipe {
-        return Recipe(
-                id = rs.getLong("id"),
-                recipeListId = rs.getLong("recipe_list_id"),
-                title = rs.getString("title"),
-                url = rs.getString("url"),
-                imageUrl = rs.getString("image_url"),
-                site = rs.getString("site"),
-                comment = rs.getString("comment"),
-                shared = rs.getBoolean("shared"),
-                created = rs.getTimestamp("created").toLocalDateTime(),
-                createdBy = rs.getString("created_by")
-        )
     }
 }
