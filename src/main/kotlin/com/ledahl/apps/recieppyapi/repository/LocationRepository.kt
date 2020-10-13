@@ -20,22 +20,23 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
     private val logger = LoggerFactory.getLogger(LocationRepository::class.java)
 
-    fun createNewLocation(name: String, address: String?, userId: Long, inviteCode: String): Number? {
+    fun createNewLocation(name: String, address: String?, userId: Long, inviteCode: String, imageUrl: String?): Number? {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("location")
                 .usingGeneratedKeyColumns("id")
 
-        val parameters = HashMap<String, Any>()
+        val parameters = HashMap<String, Any?>()
         parameters["name"] = name
         parameters["address"] = address ?: ""
         parameters["created_by"] = userId
         parameters["invite_code"] = inviteCode
         parameters["created"] = Date()
+        parameters["image_url"] = imageUrl
 
         return try {
             simpleJdbcInsert.executeAndReturnKey(MapSqlParameterSource(parameters))
         } catch (ex: Exception) {
-            logger.info("createNewLocation (name: $name, address: $address, userId: $userId, inviteCode: $inviteCode) failed", ex)
+            logger.info("createNewLocation (name: $name, address: $address, userId: $userId, inviteCode: $inviteCode), imageUrl: $imageUrl failed", ex)
             return null
         }
     }

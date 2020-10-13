@@ -11,15 +11,19 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class LocationService(@Autowired private val locationRepository: LocationRepository) {
+class LocationService(@Autowired private val locationRepository: LocationRepository,
+                      @Autowired private val imageService: ImageService) {
     fun createNewLocation(newLocationInput: NewLocationInput, user: User): Location? {
         val userId = user.id
         val inviteCode = createUniqueInviteCode()
 
+        val coverImageUrl = imageService.getCoverImage()
         val locationId = locationRepository.createNewLocation(newLocationInput.name,
                 newLocationInput.address,
                 userId,
-                inviteCode)
+                inviteCode,
+                coverImageUrl
+        )
 
         if (locationId != null) {
             val locationUserAccountId = insertUserOnLocation(userId, locationId.toLong())
@@ -30,7 +34,9 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
                         name = newLocationInput.name,
                         address = newLocationInput.address,
                         owner = userId,
-                        inviteCode = inviteCode)
+                        inviteCode = inviteCode,
+                        imageUrl = coverImageUrl
+                )
             } else {
                 throw GraphQLException("Could not insert userId $userId to location ${newLocationInput.name}")
             }
