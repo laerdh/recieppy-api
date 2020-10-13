@@ -75,4 +75,4 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: ${{ secrets.SSH_DEPLOY_TEST }} -r ${{ secrets.DOCKER_USERNAME }} -t ${{ secrets.DOCKER_PASSWORD }} -i ${{ env.VERSION_NAME }} -l ${{ secrets.DATABASE_URL_TEST }} -d ${{ secrets.DATABASE_SCHEMA_TEST }} -u ${{ secrets.DATABASE_USER_TEST }} -p ${{ secrets.DATABASE_PASSWORD_TEST }} -v ${{ secrets.OIDC_JWT_ENDPOINT }}
+        script: ${{ secrets.SSH_DEPLOY_TEST }} -r ${{ secrets.DOCKER_USERNAME }} -t ${{ secrets.DOCKER_PASSWORD }} -i ${{ env.VERSION_NAME }} -l ${{ secrets.DATABASE_URL_TEST }} -d ${{ secrets.DATABASE_SCHEMA_TEST }} -u ${{ secrets.DATABASE_USER_TEST }} -p ${{ secrets.DATABASE_PASSWORD_TEST }} -v ${{ secrets.OIDC_JWT_ENDPOINT }} -s ${{ secrets.UNSPLASH_API_KEY }}

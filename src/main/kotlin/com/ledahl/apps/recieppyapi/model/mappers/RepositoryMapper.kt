@@ -35,7 +35,8 @@ class RepositoryMapper {
                         name = item.getString("name"),
                         address = item.getString("address"),
                         owner = item.getLong("created_by"),
-                        inviteCode = item.getString("invite_code")
+                        inviteCode = item.getString("invite_code"),
+                        imageUrl = item.getString("image_url")
                 )
             }
         }
