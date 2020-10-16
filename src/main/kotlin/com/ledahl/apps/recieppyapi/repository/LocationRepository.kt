@@ -41,6 +41,35 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
+    fun updateLocation(locationId: Long, name: String, address: String?): Location? {
+        val namedJdbcTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = HashMap<String, Any?>()
+        parameters["location_id"] = locationId
+        parameters["name"] = name
+        parameters["address"] = address
+
+        val query = """
+            UPDATE
+                location
+            SET
+                name = :name, address = :address
+            WHERE
+                id = :location_id
+            RETURNING
+                location.*
+        """.trimIndent()
+
+        return try {
+            namedJdbcTemplate.queryForObject(query, parameters) { rs, _ ->
+                mapper.map(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("updateLocation (location: $locationId) failed", ex)
+            null
+        }
+    }
+
     fun addUserToLocation(userId: Long, locationId: Long): Number {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("location_user_account")
@@ -196,6 +225,32 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
             } ?: false
         } catch (ex: DataAccessException) {
             logger.info("isUserMemberOfLocation (userId: $userId, locationId: $locationId) failed", ex)
+            false
+        }
+    }
+
+    fun isUserOwnerOfLocation(userId: Long, locationId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = HashMap<String, Any>()
+        parameters["user_id"] = userId
+        parameters["location_id"] = locationId
+
+        val query = """
+            SELECT
+                COUNT(*)
+            FROM
+                location
+            WHERE
+                id = :location_id AND created_by = :user_id
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameters) { rs, _ ->
+                rs.getInt("count") > 0
+            } ?: false
+        } catch (ex: DataAccessException) {
+            logger.info("isUserOwnerOfLocation (userId: $userId, locationId: $locationId) failed", ex)
             false
         }
     }

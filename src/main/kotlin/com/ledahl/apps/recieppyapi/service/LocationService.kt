@@ -55,6 +55,15 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         return locationRepository.addUserToLocation(userId, locationId)
     }
 
+    @PreAuthorize("@authService.isOwnerOfLocation(#user, #locationId)")
+    fun updateLocation(locationId: Long, updatedLocation: NewLocationInput, user: User): Location? {
+        return locationRepository.updateLocation(
+                locationId = locationId,
+                name = updatedLocation.name,
+                address = updatedLocation.address
+        ) ?: throw GraphQLException("Could not update location with id $locationId")
+    }
+
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
     fun removeUserFromLocation(user: User, locationId: Long): List<Location> {
         val userId = user.id
