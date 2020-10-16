@@ -45,6 +45,7 @@ class UserService(@Autowired private val userRepository: UserRepository) {
 
     private fun mapToUserProfile(user: User): UserProfile {
         return UserProfile(
+                id = user.id,
                 firstName = user.firstName,
                 lastName = user.lastName,
                 email = user.email
