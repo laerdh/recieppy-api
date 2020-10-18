@@ -183,12 +183,12 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         val query = """
             SELECT
-                *
+                l.id, l.name, l.address, l.created_by, l.invite_code, l.created, l.image_url
             FROM
                 location l
-                INNER JOIN location_user_account lua ON lua.user_account_id = :user_id
+                INNER JOIN location_user_account lua ON lua.location_id = l.id
             WHERE
-                l.id = :location_id
+                lua.location_id = :location_id AND lua.user_account_id = :user_id
         """.trimIndent()
 
         return try {
