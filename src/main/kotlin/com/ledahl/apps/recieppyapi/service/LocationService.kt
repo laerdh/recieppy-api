@@ -65,16 +65,28 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
     }
 
     @PreAuthorize("@authService.isMemberOfLocation(#user, #locationId)")
-    fun removeUserFromLocation(user: User, locationId: Long): List<Location> {
-        val userId = user.id
-        val location = locationRepository.getLocation(userId, locationId)
+    fun removeCurrentUserFromLocation(user: User, locationId: Long): List<Location> {
+        val loggedInUserId = user.id
 
-        if (location?.owner == userId) {
-            throw GraphQLException("Could not remove user $userId from location. User is owner.")
+        val location = locationRepository.getLocation(loggedInUserId, locationId)
+        if (location?.owner == loggedInUserId) {
+            throw GraphQLException("Could not remove user (id: $loggedInUserId) from location. User is owner.")
+        }
+
+        locationRepository.removeUserFromLocation(loggedInUserId, locationId)
+        return locationRepository.getLocationsForUser(loggedInUserId)
+    }
+
+    @PreAuthorize("@authService.isOwnerOfLocation(#user, #locationId)")
+    fun removeUserFromLocation(user: User, userId: Long, locationId: Long): Location? {
+        val loggedInUserId = user.id
+
+        if (loggedInUserId == userId) {
+            throw GraphQLException("Could not remove user (id: $userId). User is owner")
         }
 
         locationRepository.removeUserFromLocation(userId, locationId)
-        return locationRepository.getLocationsForUser(userId)
+        return locationRepository.getLocation(loggedInUserId, locationId)
     }
 
     fun acceptInviteForUser(user: User, inviteCode: String): Boolean {
