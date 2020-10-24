@@ -68,9 +68,11 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
                 FROM
                     user_account u
                     INNER JOIN location_user_account lua ON u.id = lua.user_account_id
+                    INNER JOIN location l ON lua.location_id = l.id 
                     INNER JOIN user_role ur ON u.id = ur.user_id
                     INNER JOIN role r ON ur.role_id = r.id
                 WHERE lua.location_id = :location_id
+                ORDER BY (l.created_by = u.id) DESC
         """.trimIndent()
 
         return try {
