@@ -8,6 +8,8 @@ import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
+import org.springframework.jdbc.core.namedparam.SqlParameterSource
+import org.springframework.jdbc.core.namedparam.set
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
@@ -81,11 +83,15 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         return simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
     }
 
-    fun removeUserFromLocation(userId: Long, locationId: Long): Int {
+    fun removeUsersFromLocation(userIds: List<Long>, locationId: Long): Int {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameters = MapSqlParameterSource()
-        parameters.addValue("user_id", userId)
-        parameters.addValue("location_id", locationId)
+
+        val parameterList = Array<SqlParameterSource>(userIds.size) {
+            val parameters = MapSqlParameterSource()
+            parameters["user_id"] = userIds[it]
+            parameters["location_id"] = locationId
+            parameters
+        }
 
         val query = """
             DELETE FROM
@@ -95,9 +101,10 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         """.trimIndent()
 
         return try {
-            namedTemplate.update(query, parameters)
+            val updatedRows = namedTemplate.batchUpdate(query, parameterList)
+            return updatedRows.reduce { acc, row -> acc + row }
         } catch (ex: DataAccessException) {
-            logger.info("removeUserFromLocation (userId: $userId, locationId: $locationId) failed", ex)
+            logger.info("removeUserFromLocation (userId: $userIds, locationId: $locationId) failed", ex)
             0
         }
     }

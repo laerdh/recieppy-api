@@ -75,9 +75,9 @@ class Mutation(@Autowired private val recipeService: RecipeService,
         return locationService.removeCurrentUserFromLocation(user, locationId)
     }
 
-    fun removeUserFromLocation(userId: Long, locationId: Long, env: DataFetchingEnvironment): Location? {
+    fun removeUsersFromLocation(userIds: List<Long>, locationId: Long, env: DataFetchingEnvironment): Location? {
         val user = env.getContext<AuthContext>().user
-        return locationService.removeUserFromLocation(user, userId, locationId)
+        return locationService.removeUsersFromLocation(user, userIds, locationId)
     }
 
     fun acceptInvite(inviteCode: String, env: DataFetchingEnvironment): Boolean {
