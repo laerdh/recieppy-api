@@ -5,6 +5,7 @@ import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.NewLocationInput
 import com.ledahl.apps.recieppyapi.repository.LocationRepository
 import graphql.GraphQLException
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
@@ -13,6 +14,9 @@ import java.util.*
 @Service
 class LocationService(@Autowired private val locationRepository: LocationRepository,
                       @Autowired private val imageService: ImageService) {
+
+    private val logger = LoggerFactory.getLogger(LocationService::class.java)
+
     fun createNewLocation(newLocationInput: NewLocationInput, user: User): Location? {
         val userId = user.id
         val inviteCode = createUniqueInviteCode()
@@ -73,19 +77,21 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
             throw GraphQLException("Could not remove user (id: $loggedInUserId) from location. User is owner.")
         }
 
-        locationRepository.removeUserFromLocation(loggedInUserId, locationId)
+        locationRepository.removeUsersFromLocation(listOf(loggedInUserId), locationId)
         return locationRepository.getLocationsForUser(loggedInUserId)
     }
 
     @PreAuthorize("@authService.isOwnerOfLocation(#user, #locationId)")
-    fun removeUserFromLocation(user: User, userId: Long, locationId: Long): Location? {
+    fun removeUsersFromLocation(user: User, userIds: List<Long>, locationId: Long): Location? {
         val loggedInUserId = user.id
 
-        if (loggedInUserId == userId) {
-            throw GraphQLException("Could not remove user (id: $userId). User is owner")
+        var userIdsToRemove = userIds
+        if (userIds.contains(loggedInUserId)) {
+            userIdsToRemove = userIds.filter { it != loggedInUserId }
+            logger.info("Provided list contains owner (id: $loggedInUserId). Removing owner from list.")
         }
 
-        locationRepository.removeUserFromLocation(userId, locationId)
+        locationRepository.removeUsersFromLocation(userIdsToRemove, locationId)
         return locationRepository.getLocation(loggedInUserId, locationId)
     }
 
