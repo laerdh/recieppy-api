@@ -80,7 +80,12 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         parameters["location_id"] = locationId
         parameters["user_account_id"] = userId
 
-        return simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
+        return try {
+            simpleJdbcInsert.execute(MapSqlParameterSource(parameters))
+        } catch (ex: DataAccessException) {
+            logger.info("addUserToLocation failed (userId: $userId, locationId: $locationId)", ex)
+            0
+        }
     }
 
     fun removeUsersFromLocation(userIds: List<Long>, locationId: Long): Int {
@@ -129,30 +134,6 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
             }
         } catch (ex: DataAccessException) {
             logger.info("findLocationWithId (locationId: $locationId) failed", ex)
-            null
-        }
-    }
-
-    fun getInviteCode(locationId: Long): String? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-        val parameterSource = MapSqlParameterSource()
-        parameterSource.addValue("location_id", locationId)
-
-        val query = """
-            SELECT
-            	invite_code
-            FROM
-            	LOCATION
-            WHERE
-            	id = :location_id
-        """.trimIndent()
-
-        return try {
-            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                rs.getString("invite_code")
-            }
-        } catch (ex: DataAccessException) {
-            logger.info("getInviteCode (locationId: $locationId) failed", ex)
             null
         }
     }
@@ -259,6 +240,31 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         } catch (ex: DataAccessException) {
             logger.info("isUserOwnerOfLocation (userId: $userId, locationId: $locationId) failed", ex)
             false
+        }
+    }
+
+    fun getLocationFromInviteCode(inviteCode: String): Location? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameterSource = MapSqlParameterSource()
+        parameterSource.addValue("invite_code", inviteCode)
+
+        val query = """
+            SELECT
+                *
+            FROM
+                LOCATION
+            WHERE
+                invite_code = :invite_code
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
+                mapper.map(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getLocationFromInviteCode (inviteCode: $inviteCode) failed", ex)
+            null
         }
     }
 

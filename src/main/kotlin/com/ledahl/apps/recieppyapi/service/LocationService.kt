@@ -95,20 +95,20 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         return locationRepository.getLocation(loggedInUserId, locationId)
     }
 
-    fun acceptInviteForUser(user: User, inviteCode: String): Boolean {
-        val locationIdForInviteCode = locationRepository.getLocationIdFromInviteCode(inviteCode)
+    fun acceptInviteForUser(user: User, inviteCode: String): Location? {
+        val locationForInviteCode = locationRepository.getLocationFromInviteCode(inviteCode)
 
-        if (locationIdForInviteCode == null) {
+        if (locationForInviteCode == null) {
             throw GraphQLException("Invite-code not valid")
         }
 
-        val userInserted = insertUserOnLocation(user.id, locationIdForInviteCode)
+        val userInserted = insertUserOnLocation(user.id, locationForInviteCode.id)
 
-        return userInserted.toInt() > 0
-    }
+        if (userInserted.toInt() < 1) {
+            throw GraphQLException("Could not add user to location. User may have been added already.")
+        }
 
-    fun getLocation(user: User, locationId: Long): Location? {
-        return locationRepository.getLocation(userId = user.id, locationId = locationId)
+        return locationForInviteCode
     }
 
     fun getLocations(user: User): List<Location> {

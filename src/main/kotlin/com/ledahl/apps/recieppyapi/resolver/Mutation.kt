@@ -80,7 +80,7 @@ class Mutation(@Autowired private val recipeService: RecipeService,
         return locationService.removeUsersFromLocation(user, userIds, locationId)
     }
 
-    fun acceptInvite(inviteCode: String, env: DataFetchingEnvironment): Boolean {
+    fun acceptInvite(inviteCode: String, env: DataFetchingEnvironment): Location? {
         val user = env.getContext<AuthContext>().user
         return locationService.acceptInviteForUser(user, inviteCode)
     }
