@@ -85,6 +85,15 @@ class Mutation(@Autowired private val recipeService: RecipeService,
         return locationService.acceptInviteForUser(user, inviteCode)
     }
 
+    fun sendInvite(locationId: Long, email: String, env: DataFetchingEnvironment): Boolean {
+        val user = env.getContext<AuthContext>().user
+        return locationService.sendEmailInviteToUser(
+                user = user,
+                locationId = locationId,
+                toEmail = email
+        )
+    }
+
     fun newRecipePlanEvent(locationId: Long, recipePlanEvent: RecipePlanEventInput, env: DataFetchingEnvironment): RecipePlan {
         val user = env.getContext<AuthContext>().user
         return recipePlanService.createRecipePlanEvent(
