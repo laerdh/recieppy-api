@@ -13,7 +13,8 @@ import java.util.*
 
 @Service
 class LocationService(@Autowired private val locationRepository: LocationRepository,
-                      @Autowired private val imageService: ImageService) {
+                      @Autowired private val imageService: ImageService,
+                      @Autowired private val emailService: EmailService) {
 
     private val logger = LoggerFactory.getLogger(LocationService::class.java)
 
@@ -93,6 +94,22 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
 
         locationRepository.removeUsersFromLocation(userIdsToRemove, locationId)
         return locationRepository.getLocation(loggedInUserId, locationId)
+    }
+
+    @PreAuthorize("@authService.isOwnerOfLocation(#user, #locationId)")
+    fun sendEmailInviteToUser(user: User, locationId: Long, toEmail: String): Boolean {
+        val location = locationRepository.getLocation(user.id, locationId)
+
+        if (location == null) {
+            throw GraphQLException("Location (locationId: $locationId) not found")
+        }
+
+        return emailService.sendInvite(
+                fromName = "${user.firstName} ${user.lastName}",
+                toEmail = toEmail,
+                locationName = location.name,
+                inviteCode = location.inviteCode
+        )
     }
 
     fun acceptInviteForUser(user: User, inviteCode: String): Location? {
