@@ -5,14 +5,17 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.mail.MailException
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import java.util.concurrent.CompletableFuture
 
 @Service
 class EmailService(@Autowired private val javaMailSender: JavaMailSender) {
 
     private val logger = LoggerFactory.getLogger(EmailService::class.java)
 
-    fun sendInvite(fromName: String, toEmail: String, locationName: String, inviteCode: String): Boolean {
+    @Async
+    fun sendInvite(fromName: String, toEmail: String, locationName: String, inviteCode: String): CompletableFuture<Boolean> {
         val message = javaMailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true)
         helper.setFrom("Reciappy")
@@ -30,10 +33,10 @@ class EmailService(@Autowired private val javaMailSender: JavaMailSender) {
 
         return try {
             javaMailSender.send(message)
-            true
+            CompletableFuture.completedFuture(true)
         } catch (ex: MailException) {
             logger.error("Could not send mail", ex)
-            false
+            CompletableFuture.completedFuture(false)
         }
     }
 }

@@ -3,7 +3,7 @@ package com.ledahl.apps.recieppyapi.model
 import java.time.LocalDateTime
 
 data class LocationInvite(val id: Long,
-                          val sent: LocalDateTime,
+                          val timeSent: LocalDateTime? = null,
                           val locationId: Long,
                           val email: String,
                           val inviteCode: String,

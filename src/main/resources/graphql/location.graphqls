@@ -18,7 +18,7 @@ input NewLocationInput {
 extend type Mutation {
     newLocation(input: NewLocationInput): Location
     acceptInvite(inviteCode: String): Location
-    sendInvite(locationId: ID!, email: String!): Boolean
+    sendInvite(locationId: ID!, email: String!): Location
     removeCurrentUserFromLocation(locationId: ID!): [Location]!
     removeUsersFromLocation(userIds: [ID!], locationId: ID!): Location
     updateLocation(locationId: ID!, input: NewLocationInput): Location

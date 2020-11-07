@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.namedparam.set
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
+import java.time.LocalDateTime
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -264,7 +265,32 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
-    fun updateLocationEmailInvite(locationId: Long, inviteCode: String, userId: Long): Boolean {
+    fun updateLocationEmailInviteSent(locationId: Long, inviteCode: String, timeSent: LocalDateTime): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters["location_id"] = locationId
+        parameters["invite_code"] = inviteCode
+        parameters["time_sent"] = timeSent
+
+        val query = """
+            UPDATE
+                location_invite
+            SET
+                time_sent = :time_sent
+            WHERE
+                location_id = :location_id AND inviteCode = :invite_code
+        """.trimIndent()
+
+        return try {
+            namedTemplate.update(query, parameters) > 0
+        } catch (ex: DataAccessException) {
+            logger.info("updateLocationEmailInviteSent failed", ex)
+            false
+        }
+    }
+
+    fun updateLocationEmailInviteAccepted(locationId: Long, inviteCode: String, userId: Long): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameters = MapSqlParameterSource()
