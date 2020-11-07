@@ -8,6 +8,7 @@ import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.util.concurrent.CompletableFuture
+import javax.mail.internet.InternetAddress
 
 @Service
 class EmailService(@Autowired private val javaMailSender: JavaMailSender) {
@@ -18,7 +19,7 @@ class EmailService(@Autowired private val javaMailSender: JavaMailSender) {
     fun sendInvite(fromName: String, toEmail: String, locationName: String, inviteCode: String): CompletableFuture<Boolean> {
         val message = javaMailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true)
-        helper.setFrom("Reciappy")
+        helper.setFrom(InternetAddress("ledahl@ledahl.com", "Reciappy"))
         helper.setTo(toEmail)
         helper.setSubject("$fromName har invitert deg til kokeboken \"$locationName\"")
 
