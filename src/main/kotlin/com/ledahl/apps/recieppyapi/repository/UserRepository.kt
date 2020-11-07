@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.User
+import com.ledahl.apps.recieppyapi.model.UserProfile
 import com.ledahl.apps.recieppyapi.model.mappers.Mapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -8,6 +9,7 @@ import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
+import org.springframework.jdbc.core.namedparam.set
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
@@ -81,6 +83,36 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
             }
         } catch (ex: DataAccessException) {
             logger.info("getUsersByLocation (locationId: $locationId) failed", ex)
+            emptyList()
+        }
+    }
+
+    fun getUsersInvitedToLocation(locationId: Long): List<UserProfile> {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters["location_id"] = locationId
+
+        val query = """
+            SELECT
+                *
+            FROM
+                location_invite
+            WHERE
+                location_id = :location_id AND accepted_user_id IS NULL
+        """.trimIndent()
+
+        return try {
+            namedTemplate.query(query, parameters) { rs, _ ->
+                UserProfile(
+                        id = 0,
+                        firstName = "",
+                        lastName = "",
+                        email = rs.getString("email")
+                )
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("getUsersInvitedToLocation failed", ex)
             emptyList()
         }
     }
