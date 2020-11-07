@@ -107,7 +107,7 @@ class RepositoryMapper {
             override fun map(item: ResultSet): LocationInvite {
                 return LocationInvite(
                         id = item.getLong("id"),
-                        sent = item.getTimestamp("sent").toLocalDateTime(),
+                        timeSent = item.getTimestamp("time_sent").toLocalDateTime(),
                         locationId = item.getLong("location_id"),
                         email = item.getString("email"),
                         inviteCode = item.getString("invite_code"),
