@@ -100,4 +100,20 @@ class RepositoryMapper {
             }
         }
     }
+
+    @Bean
+    fun locationInviteMapper(): Mapper<ResultSet, LocationInvite> {
+        return object : Mapper<ResultSet, LocationInvite> {
+            override fun map(item: ResultSet): LocationInvite {
+                return LocationInvite(
+                        id = item.getLong("id"),
+                        sent = item.getTimestamp("sent").toLocalDateTime(),
+                        locationId = item.getLong("location_id"),
+                        email = item.getString("email"),
+                        inviteCode = item.getString("invite_code"),
+                        acceptedByUser = item.getLong("accepted_user_id")
+                )
+            }
+        }
+    }
 }

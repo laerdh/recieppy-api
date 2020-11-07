@@ -1,6 +1,7 @@
 package com.ledahl.apps.recieppyapi.repository
 
 import com.ledahl.apps.recieppyapi.model.Location
+import com.ledahl.apps.recieppyapi.model.LocationInvite
 import com.ledahl.apps.recieppyapi.model.mappers.Mapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,7 +19,8 @@ import kotlin.collections.HashMap
 
 @Repository
 class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
-                         @Autowired private val mapper: Mapper<ResultSet, Location>) {
+                         @Autowired private val locationMapper: Mapper<ResultSet, Location>,
+                         @Autowired private val locationInviteMapper: Mapper<ResultSet, LocationInvite>) {
 
     private val logger = LoggerFactory.getLogger(LocationRepository::class.java)
 
@@ -64,7 +66,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         return try {
             namedJdbcTemplate.queryForObject(query, parameters) { rs, _ ->
-                mapper.map(rs)
+                locationMapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("updateLocation (location: $locationId) failed", ex)
@@ -155,7 +157,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         return try {
             namedTemplate.query(query, parameterSource) { rs, _ ->
-                mapper.map(rs)
+                locationMapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getLocationsForUser (userId: $userId) failed", ex)
@@ -181,7 +183,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         return try {
             namedTemplate.queryForObject(query, parameters) { rs, _ ->
-                mapper.map(rs)
+                locationMapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getLocation (userId: $userId, locationId: $locationId) failed", ex)
@@ -243,6 +245,76 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
+    fun insertLocationEmailInvite(locationId: Long, email: String, inviteCode: String): Boolean {
+        val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("location_invite")
+                .usingColumns("location_id", "email", "invite_code")
+                .usingGeneratedKeyColumns("id")
+
+        val parameters = MapSqlParameterSource()
+        parameters["location_id"] = locationId
+        parameters["email"] = email
+        parameters["invite_code"] = inviteCode
+
+        return try {
+            simpleJdbcInsert.execute(parameters) > 0
+        } catch (ex: DataAccessException) {
+            logger.error("Could not insert email invite (locationId: $locationId, email: $email)", ex)
+            false
+        }
+    }
+
+    fun updateLocationEmailInvite(locationId: Long, inviteCode: String, userId: Long): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters["location_id"] = locationId
+        parameters["invite_code"] = inviteCode
+        parameters["user_id"] = userId
+
+        val query = """
+            UPDATE
+                location_invite
+            SET
+                accepted_user_id = :user_id
+            WHERE
+                location_id = :location_id AND invite_code = :invite_code
+        """.trimIndent()
+
+        return try {
+            namedTemplate.update(query, parameters) > 0
+        } catch (ex: DataAccessException) {
+            logger.error("Could not update email invite", ex)
+            false
+        }
+    }
+
+    fun getLocationEmailInvite(locationId: Long, email: String): LocationInvite? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters["location_id"] = locationId
+        parameters["email"] = email
+
+        val query = """
+            SELECT
+                *
+            FROM
+                location_invite
+            WHERE
+                location_id = :location_id AND email = :email
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameters) { rs, _ ->
+                locationInviteMapper.map(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.error("Could not get location email invite (locationId: $locationId, email: $email)", ex)
+            null
+        }
+    }
+
     fun getLocationFromInviteCode(inviteCode: String): Location? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
@@ -260,10 +332,36 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         return try {
             namedTemplate.queryForObject(query, parameterSource) { rs, _ ->
-                mapper.map(rs)
+                locationMapper.map(rs)
             }
         } catch (ex: DataAccessException) {
             logger.info("getLocationFromInviteCode (inviteCode: $inviteCode) failed", ex)
+            null
+        }
+    }
+
+    fun getLocationFromEmailInviteCode(inviteCode: String): Location? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters["invite_code"] = inviteCode
+
+        val query = """
+            SELECT
+                l.id, l.name, l.address, l.created_by, l.invite_code, l.created, l.image_url
+            FROM
+                LOCATION_INVITE li
+                INNER JOIN LOCATION l ON li.location_id = l.id  
+            WHERE
+                li.invite_code = :invite_code
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameters) { rs, _ ->
+                locationMapper.map(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.error("getLocationFromEmailInviteCode (inviteCode: $inviteCode) failed", ex)
             null
         }
     }

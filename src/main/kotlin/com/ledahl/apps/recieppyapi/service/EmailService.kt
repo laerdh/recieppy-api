@@ -15,7 +15,7 @@ class EmailService(@Autowired private val javaMailSender: JavaMailSender) {
     fun sendInvite(fromName: String, toEmail: String, locationName: String, inviteCode: String): Boolean {
         val message = javaMailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true)
-        helper.setFrom("noreply@ledahl.com")
+        helper.setFrom("Reciappy")
         helper.setTo(toEmail)
         helper.setSubject("$fromName har invitert deg til kokeboken \"$locationName\"")
 
