@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 import java.util.*
 
 @Service
@@ -98,22 +99,59 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
 
     @PreAuthorize("@authService.isOwnerOfLocation(#user, #locationId)")
     fun sendEmailInviteToUser(user: User, locationId: Long, toEmail: String): Boolean {
+        val fromUser = "${user.firstName} ${user.lastName}"
+        val inviteEmail = toEmail.toLowerCase().trim()
+
+        val existingInvitation = locationRepository.getLocationEmailInvite(locationId, inviteEmail)
         val location = locationRepository.getLocation(user.id, locationId)
 
         if (location == null) {
             throw GraphQLException("Location (locationId: $locationId) not found")
         }
 
-        return emailService.sendInvite(
-                fromName = "${user.firstName} ${user.lastName}",
-                toEmail = toEmail,
-                locationName = location.name,
-                inviteCode = location.inviteCode
+        val inviteCode = createUniqueInviteCode()
+
+        // Re-send invite
+        if (existingInvitation != null) {
+            val lastSentTimeLessThanOneDay = existingInvitation.sent.isAfter(LocalDateTime.now().minusDays(1))
+            if (lastSentTimeLessThanOneDay) {
+                throw GraphQLException("An invite has already been sent to $inviteEmail at ${existingInvitation.sent}")
+            }
+
+            return emailService.sendInvite(
+                    fromName = fromUser,
+                    toEmail = inviteEmail,
+                    locationName = location.name,
+                    inviteCode = inviteCode
+            )
+        }
+
+        val emailInviteInserted = locationRepository.insertLocationEmailInvite(
+                locationId = location.id,
+                email = inviteEmail,
+                inviteCode = inviteCode
         )
+
+        if (emailInviteInserted) {
+            return emailService.sendInvite(
+                    fromName = fromUser,
+                    toEmail = inviteEmail,
+                    locationName = location.name,
+                    inviteCode = inviteCode
+            )
+        }
+
+        throw GraphQLException("Could not send invite (locationId: $locationId, email: $inviteEmail)")
     }
 
     fun acceptInviteForUser(user: User, inviteCode: String): Location? {
-        val locationForInviteCode = locationRepository.getLocationFromInviteCode(inviteCode)
+        var locationForInviteCode = locationRepository.getLocationFromInviteCode(inviteCode)
+
+        if (locationForInviteCode == null) {
+            locationForInviteCode = locationRepository.getLocationFromEmailInviteCode(inviteCode)?.also {
+                locationRepository.updateLocationEmailInvite(it.id, inviteCode, user.id)
+            }
+        }
 
         if (locationForInviteCode == null) {
             throw GraphQLException("Invite-code not valid")
