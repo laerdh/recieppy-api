@@ -23,14 +23,13 @@ class UserService(@Autowired private val userRepository: UserRepository) {
     }
 
     fun getUsersInLocation(locationId: Long): List<UserProfile> {
-        val members = mutableListOf<UserProfile>()
-
-        members.addAll(userRepository.getUsersInLocation(locationId).map {
+        return userRepository.getUsersInLocation(locationId).map {
             mapToUserProfile(it)
-        })
-        members.addAll(userRepository.getUsersInvitedToLocation(locationId))
+        }
+    }
 
-        return members
+    fun getUsersInvitedToLocation(locationId: Long): List<UserProfile> {
+        return userRepository.getUsersInvitedToLocation(locationId)
     }
 
     fun createUser(user: User): User {
