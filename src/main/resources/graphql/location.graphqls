@@ -7,6 +7,7 @@ type Location {
     recipePlan: RecipePlan
     inviteCode: String!
     members: [UserProfile]
+    invited: [UserProfile]
     imageUrl: String
 }
 

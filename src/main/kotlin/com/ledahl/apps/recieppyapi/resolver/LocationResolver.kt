@@ -30,4 +30,8 @@ class LocationResolver(@Autowired private val recipeListService: RecipeListServi
     fun getMembers(location: Location, env: DataFetchingEnvironment): List<UserProfile> {
         return userService.getUsersInLocation(location.id)
     }
+
+    fun getInvited(location: Location, env: DataFetchingEnvironment): List<UserProfile> {
+        return userService.getUsersInvitedToLocation(location.id)
+    }
 }
