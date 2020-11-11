@@ -76,7 +76,7 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
-    fun addUserToLocation(userId: Long, locationId: Long): Number {
+    fun addUserToLocation(userId: Long, locationId: Long): Int {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("location_user_account")
 
@@ -247,13 +247,14 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
-    fun insertLocationEmailInvite(locationId: Long, email: String, inviteCode: String): Boolean {
+    fun createEmailInvite(userId: Long, locationId: Long, email: String, inviteCode: String): Boolean {
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("location_invite")
-                .usingColumns("location_id", "email", "invite_code")
+                .usingColumns("invited_by", "location_id", "email", "invite_code")
                 .usingGeneratedKeyColumns("id")
 
         val parameters = MapSqlParameterSource()
+        parameters["invited_by"] = userId
         parameters["location_id"] = locationId
         parameters["email"] = email
         parameters["invite_code"] = inviteCode
@@ -266,7 +267,59 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
-    fun updateLocationEmailInviteSent(locationId: Long, inviteCode: String, timeSent: LocalDateTime): Boolean {
+    fun getEmailInvite(inviteCode: String): LocationInvite? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters["invite_code"] = inviteCode
+
+        val query = """
+            SELECT
+                *
+            FROM
+                location_invite
+            WHERE
+                invite_code = :invite_code
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameters) { rs, _ ->
+                locationInviteMapper.map(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.info("Location not found for invite code (inviteCode: $inviteCode)", ex)
+            null
+        }
+    }
+
+    fun getEmailInvite(userId: Long, locationId: Long, email: String): LocationInvite? {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters["user_id"] = userId
+        parameters["location_id"] = locationId
+        parameters["email"] = email
+
+        val query = """
+            SELECT
+                *
+            FROM
+                location_invite
+            WHERE
+                invited_by = :user_id AND location_id = :location_id AND email = :email
+        """.trimIndent()
+
+        return try {
+            namedTemplate.queryForObject(query, parameters) { rs, _ ->
+                locationInviteMapper.map(rs)
+            }
+        } catch (ex: DataAccessException) {
+            logger.error("Could not get location email invite (locationId: $locationId, email: $email)", ex)
+            null
+        }
+    }
+
+    fun updateEmailInviteTimeSent(locationId: Long, inviteCode: String, timeSent: LocalDateTime): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameters = MapSqlParameterSource()
@@ -291,7 +344,30 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
-    fun updateLocationEmailInviteAccepted(locationId: Long, inviteCode: String, userId: Long): Boolean {
+    fun removeEmailInvite(userId: Long, locationId: Long, email: String): Boolean {
+        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
+
+        val parameters = MapSqlParameterSource()
+        parameters["user_id"] = userId
+        parameters["location_id"] = locationId
+        parameters["email"] = email
+
+        val query = """
+            DELETE FROM
+                location_invite
+            WHERE
+                invited_by = :user_id AND location_id = :location_id AND email = :email
+        """.trimIndent()
+
+        return try {
+            namedTemplate.update(query, parameters) > 0
+        } catch (ex: DataAccessException) {
+            logger.info("removeEmailInvite failed", ex)
+            false
+        }
+    }
+
+    fun updateEmailInviteAccepted(locationId: Long, inviteCode: String, userId: Long): Boolean {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
         val parameters = MapSqlParameterSource()
@@ -316,32 +392,6 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
-    fun getLocationEmailInvite(locationId: Long, email: String): LocationInvite? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-
-        val parameters = MapSqlParameterSource()
-        parameters["location_id"] = locationId
-        parameters["email"] = email
-
-        val query = """
-            SELECT
-                *
-            FROM
-                location_invite
-            WHERE
-                location_id = :location_id AND email = :email
-        """.trimIndent()
-
-        return try {
-            namedTemplate.queryForObject(query, parameters) { rs, _ ->
-                locationInviteMapper.map(rs)
-            }
-        } catch (ex: DataAccessException) {
-            logger.error("Could not get location email invite (locationId: $locationId, email: $email)", ex)
-            null
-        }
-    }
-
     fun getLocationFromInviteCode(inviteCode: String): Location? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
 
@@ -352,9 +402,11 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
             SELECT
                 *
             FROM
-                LOCATION
+                LOCATION l
             WHERE
-                invite_code = :invite_code
+                l.invite_code = :invite_code
+            OR
+                l.id IN (SELECT li.location_id FROM location_invite li WHERE li.invite_code = :invite_code)
         """.trimIndent()
 
         return try {
@@ -367,32 +419,6 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         }
     }
 
-    fun getLocationFromEmailInviteCode(inviteCode: String): Location? {
-        val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
-
-        val parameters = MapSqlParameterSource()
-        parameters["invite_code"] = inviteCode
-
-        val query = """
-            SELECT
-                l.id, l.name, l.address, l.created_by, l.invite_code, l.created, l.image_url
-            FROM
-                LOCATION_INVITE li
-                INNER JOIN LOCATION l ON li.location_id = l.id  
-            WHERE
-                li.invite_code = :invite_code
-        """.trimIndent()
-
-        return try {
-            namedTemplate.queryForObject(query, parameters) { rs, _ ->
-                locationMapper.map(rs)
-            }
-        } catch (ex: DataAccessException) {
-            logger.error("getLocationFromEmailInviteCode (inviteCode: $inviteCode) failed", ex)
-            null
-        }
-    }
-
     fun getLocationIdFromInviteCode(inviteCode: String): Long? {
         val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
         val parameterSource = MapSqlParameterSource()
@@ -401,11 +427,13 @@ class LocationRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         val query = """
             SELECT
-            	id
+                l.id
             FROM
-            	LOCATION
+                LOCATION l
             WHERE
-            	invite_code = :invite_code
+                l.invite_code = :invite_code
+            OR
+                l.id IN (SELECT li.location_id FROM location_invite li WHERE li.invite_code = :invite_code)
         """.trimIndent()
 
         return try {

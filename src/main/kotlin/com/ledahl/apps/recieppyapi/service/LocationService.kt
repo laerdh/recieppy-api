@@ -51,14 +51,14 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
         }
     }
 
-    fun insertUserOnLocation(userId: Long, locationId: Long): Number {
+    fun insertUserOnLocation(userId: Long, locationId: Long): Int {
         val existingLocationId = locationRepository.findLocationWithId(locationId = locationId)
 
         if (existingLocationId == null) {
             throw GraphQLException("Could not find location with id $locationId")
         }
 
-        return locationRepository.addUserToLocation(userId, locationId)
+        return locationRepository.addUserToLocation(userId, locationId).toInt()
     }
 
     @PreAuthorize("@authService.isOwnerOfLocation(#user, #locationId)")
@@ -101,7 +101,7 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
     fun sendEmailInviteToUser(user: User, locationId: Long, toEmail: String): Location? {
         val inviteEmail = toEmail.toLowerCase().trim()
 
-        val existingInvitation = locationRepository.getLocationEmailInvite(locationId, inviteEmail)
+        val existingInvitation = locationRepository.getEmailInvite(user.id, locationId, inviteEmail)
         val location = locationRepository.getLocation(user.id, locationId)
 
         if (location == null) {
@@ -112,12 +112,13 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
 
         // Re-send invite
         if (existingInvitation != null) {
-            val lastSentTimeLessThanOneDay = existingInvitation.timeSent?.isAfter(LocalDateTime.now().minusDays(1)) ?: false
-            if (lastSentTimeLessThanOneDay) {
+            val lastSentTimeLessThanOneDayAgo = existingInvitation.timeSent?.isAfter(LocalDateTime.now().minusDays(1)) ?: false
+            if (lastSentTimeLessThanOneDayAgo) {
                 throw GraphQLException("User '$inviteEmail' has already been invited to location")
             }
         } else {
-            val emailInviteInserted = locationRepository.insertLocationEmailInvite(
+            val emailInviteInserted = locationRepository.createEmailInvite(
+                    userId = user.id,
                     locationId = location.id,
                     email = inviteEmail,
                     inviteCode = inviteCode
@@ -135,39 +136,58 @@ class LocationService(@Autowired private val locationRepository: LocationReposit
                 inviteCode = inviteCode
         ).thenAccept { didSend ->
             if (didSend) {
-                locationRepository.updateLocationEmailInviteSent(locationId, inviteCode, LocalDateTime.now())
+                locationRepository.updateEmailInviteTimeSent(locationId, inviteCode, LocalDateTime.now())
             }
         }
 
         return location
     }
 
+    @PreAuthorize("@authService.isOwnerOfLocation(#user, #locationId)")
+    fun revokeEmailInvite(user: User, locationId: Long, email: String): Location? {
+        val inviteEmail = email.toLowerCase().trim()
+        val existingInvite = locationRepository.getEmailInvite(user.id, locationId, inviteEmail)
+
+        if (existingInvite == null) {
+            throw GraphQLException("Could not revoke invitation. Invitation does not exist")
+        }
+
+        if (existingInvite.acceptedByUser != null) {
+            throw GraphQLException("Invite code is already used")
+        }
+
+        locationRepository.removeEmailInvite(user.id, locationId, email)
+        return locationRepository.getLocation(user.id, locationId)
+    }
+
     fun acceptInviteForUser(user: User, inviteCode: String): Location? {
         val validatedInviteCode = validateInviteCode(inviteCode)
-        var locationForInviteCode = locationRepository.getLocationFromInviteCode(validatedInviteCode)
 
-        if (locationForInviteCode == null) {
-            locationForInviteCode = locationRepository.getLocationFromEmailInviteCode(validatedInviteCode)?.also {
-                locationRepository.updateLocationEmailInviteAccepted(it.id, validatedInviteCode, user.id)
-            }
+        val invitedLocation = locationRepository.getLocationFromInviteCode(inviteCode)
+        if (invitedLocation == null) {
+            throw GraphQLException("Invite-code '$validatedInviteCode' is invalid")
         }
 
-        if (locationForInviteCode == null) {
-            throw GraphQLException("Invite-code not valid")
-        }
-
-        val isMemberOfLocation = locationRepository.isUserMemberOfLocation(user.id, locationForInviteCode.id)
+        val isMemberOfLocation = locationRepository.isUserMemberOfLocation(user.id, invitedLocation.id)
         if (isMemberOfLocation) {
-            throw GraphQLException("Invite-code '${validatedInviteCode}' has already been used")
+            throw GraphQLException("User is already member of location")
         }
 
-        val userInserted = insertUserOnLocation(user.id, locationForInviteCode.id)
-
-        if (userInserted.toInt() < 1) {
-            throw GraphQLException("Could not add user to location. User may have been added already.")
+        val userInserted = insertUserOnLocation(user.id, invitedLocation.id) > 0
+        if (!userInserted) {
+            throw GraphQLException("Could not accept inviteCode")
         }
 
-        return locationForInviteCode
+        val emailInvitation = locationRepository.getEmailInvite(validatedInviteCode)
+        if (emailInvitation != null) {
+            locationRepository.updateEmailInviteAccepted(
+                    locationId = invitedLocation.id,
+                    inviteCode = validatedInviteCode,
+                    userId = user.id
+            )
+        }
+
+        return invitedLocation
     }
 
     fun getLocations(user: User): List<Location> {

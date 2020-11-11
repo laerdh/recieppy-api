@@ -105,13 +105,16 @@ class RepositoryMapper {
     fun locationInviteMapper(): Mapper<ResultSet, LocationInvite> {
         return object : Mapper<ResultSet, LocationInvite> {
             override fun map(item: ResultSet): LocationInvite {
+                val acceptedUserId = item.getLong("accepted_user_id")
+
                 return LocationInvite(
                         id = item.getLong("id"),
-                        timeSent = item.getTimestamp("time_sent").toLocalDateTime(),
+                        invitedBy = item.getLong("invited_by"),
+                        timeSent = item.getTimestamp("time_sent")?.toLocalDateTime(),
                         locationId = item.getLong("location_id"),
                         email = item.getString("email"),
                         inviteCode = item.getString("invite_code"),
-                        acceptedByUser = item.getLong("accepted_user_id")
+                        acceptedByUser = if (acceptedUserId == 0L) null else acceptedUserId
                 )
             }
         }
