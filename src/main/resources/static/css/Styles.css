@@ -1,0 +1,93 @@
+@font-face {
+    font-family: lato-bold;
+    src: url("/fonts/Lato-Bold.ttf");
+}
+
+@font-face {
+    font-family: avenir;
+    src: url("/fonts/AvenirLTStd-Medium.otf");
+}
+
+body {
+    color: #202224;
+    margin: 30px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    font-family: lato-bold;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+}
+
+.logo-container-link {
+    text-decoration: none;
+    color: #202224;
+}
+
+#logo-name {
+    font-family: 'avenir';
+    font-size: 1.2em;
+    margin: 0 16px 0 16px;
+}
+
+.divider {
+    width: 5%;
+    height: 4px;
+    background-color: #D9B0A7;
+    border-radius: 3px;
+    margin: 16px 0 16px 0;
+}
+
+.invite-code-container {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    margin-top: 8px;
+}
+
+.invite-code-container > p {
+    margin: 0;
+}
+
+.invite-code-container > div {
+    padding: 24px 0 24px 0;
+}
+
+.invite-code-container div a {
+    color: #202224;
+    text-decoration: none;
+}
+
+#invite-code {
+    display: inline-flex;
+    font-size: 1.5em;
+    margin: 0;
+    padding: 8px 16px 8px 16px;
+    background-color: rgb(235, 236, 240);
+    border-radius: 1.5em;
+}
+
+.button-primary {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 10em;
+    height: 48px;
+    font-family: 'lato-bold';
+    font-size: 1em;
+    color: white;
+    margin-top: 32px;
+    padding: 16px;
+    cursor: pointer;
+    background-color: #A67165;
+    border: none;
+    text-decoration: none;
+    border-radius: 28px;
+}
+
