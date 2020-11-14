@@ -5,6 +5,18 @@ spring:
   mail:
     host: 172.17.0.1
 
+  # THYMELEAF (ThymeleafAutoConfiguration)
+  thymeleaf:
+    check-template-location: true
+    prefix: classpath:/templates/
+    excluded-view-names: # comma-separated list of view names   that should be excluded from resolution
+    view-names: # comma-separated list of view names that can be resolved
+    suffix: .html
+    mode: HTML5
+    encoding: UTF-8
+    content-type: text/html # ;charset=<encoding> is added
+    cache: true # set to false for hot refresh
+
 server:
   port: ${SERVER_PORT:8000}
 
