@@ -8,6 +8,7 @@ type Recipe {
     shared: Boolean!
     comment: String
     created: String!
+    ingredients: String
     createdBy: String
 }
 
