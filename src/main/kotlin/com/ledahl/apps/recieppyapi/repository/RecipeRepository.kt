@@ -241,7 +241,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("recipe")
                 .usingGeneratedKeyColumns("id")
-                .usingColumns("owner_id", "title", "url", "image_url", "site", "comment")
+                .usingColumns("owner_id", "title", "url", "image_url", "site", "comment", "ingredients")
 
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("owner_id", userId)
@@ -250,6 +250,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         parameterSource.addValue("image_url", recipe.imageUrl)
         parameterSource.addValue("site", recipe.site)
         parameterSource.addValue("comment", recipe.comment)
+        parameterSource.addValue("ingredients", recipe.ingredients)
 
         return simpleJdbcInsert.executeAndReturnKey(parameterSource)
     }
@@ -298,13 +299,14 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         parameterSource.addValue("url", recipe.url)
         parameterSource.addValue("image_url", recipe.imageUrl)
         parameterSource.addValue("site", recipe.site)
+        parameterSource.addValue("ingredients", recipe.ingredients)
         parameterSource.addValue("comment", recipe.comment)
 
         val query = """
             UPDATE
                 recipe
             SET
-                title = :title, url = :url, image_url = :image_url, site = :site, comment = :comment
+                title = :title, url = :url, image_url = :image_url, site = :site, comment = :comment, ingredients = :ingredients
             WHERE
                 id = :recipe_id
         """.trimIndent()

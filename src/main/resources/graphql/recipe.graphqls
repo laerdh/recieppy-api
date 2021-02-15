@@ -25,6 +25,7 @@ input RecipeInput {
     site: String
     recipeListId: ID!
     tags: [ID]
+    ingredients: String
     comment: String
 }
 

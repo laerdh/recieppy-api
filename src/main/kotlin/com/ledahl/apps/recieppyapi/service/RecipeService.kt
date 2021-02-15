@@ -69,7 +69,8 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
                     url = recipeInput.url,
                     imageUrl = recipeInput.imageUrl,
                     site = recipeInput.site,
-                    comment = recipeInput.comment
+                    ingredients = recipeInput.ingredients?.trim(),
+                    comment = recipeInput.comment?.trim()
             )
         }
 
@@ -100,7 +101,8 @@ class RecipeService(@Autowired private val recipeRepository: RecipeRepository,
                 url = recipeInput.url,
                 imageUrl = recipeInput.imageUrl,
                 site = recipeInput.site,
-                comment = recipeInput.comment
+                ingredients = recipeInput.ingredients?.trim(),
+                comment = recipeInput.comment?.trim()
         )
 
         val recipeUpdated = recipeRepository.updateRecipe(updatedRecipe)
