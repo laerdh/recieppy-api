@@ -108,7 +108,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         val query = """
             SELECT
-                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, false AS shared
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, r.ingredients, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, false AS shared
             FROM
                 recipe r
                 INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
@@ -122,7 +122,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
                 lua.location_id = :location_id
             UNION
             SELECT
-                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, true AS shared
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, r.ingredients, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, true AS shared
             FROM
                 recipe r
                 INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
@@ -152,7 +152,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         val query = """
             SELECT
-                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by, 
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, r.ingredients, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by, 
                 (SELECT COUNT(*) > 0 FROM shared_recipe_list sr WHERE sr.recipient_id = :user_id AND sr.recipe_list_id = :recipe_list_id AND sr.accepted) AS shared
             FROM
                 recipe r
@@ -181,7 +181,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         val query = """
             SELECT
-                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by, 
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, r.ingredients, concat(r_owner.first_name, ' ', r_owner.last_name) AS created_by, 
                 ( SELECT COUNT(*) > 0
                     FROM (
                         SELECT 1 FROM shared_recipe sr WHERE sr.recipe_id = :recipe_id AND sr.recipient_id = :user_id AND sr.accepted
@@ -215,7 +215,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
 
         val query = """
             SELECT
-                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, true AS shared
+                r.id, rlr.recipe_list_id, r.title, r.url, r.image_url, r.site, r.comment, r.created, r.ingredients, concat(owner.first_name, ' ', owner.last_name) AS created_by, rlr.recipe_list_id, true AS shared
             FROM
                 recipe r
                 INNER JOIN recipe_list_recipe rlr ON r.id = rlr.recipe_id
@@ -241,7 +241,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         val simpleJdbcInsert = SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("recipe")
                 .usingGeneratedKeyColumns("id")
-                .usingColumns("owner_id", "title", "url", "image_url", "site", "comment")
+                .usingColumns("owner_id", "title", "url", "image_url", "site", "comment", "ingredients")
 
         val parameterSource = MapSqlParameterSource()
         parameterSource.addValue("owner_id", userId)
@@ -250,6 +250,7 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         parameterSource.addValue("image_url", recipe.imageUrl)
         parameterSource.addValue("site", recipe.site)
         parameterSource.addValue("comment", recipe.comment)
+        parameterSource.addValue("ingredients", recipe.ingredients)
 
         return simpleJdbcInsert.executeAndReturnKey(parameterSource)
     }
@@ -298,13 +299,14 @@ class RecipeRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
         parameterSource.addValue("url", recipe.url)
         parameterSource.addValue("image_url", recipe.imageUrl)
         parameterSource.addValue("site", recipe.site)
+        parameterSource.addValue("ingredients", recipe.ingredients)
         parameterSource.addValue("comment", recipe.comment)
 
         val query = """
             UPDATE
                 recipe
             SET
-                title = :title, url = :url, image_url = :image_url, site = :site, comment = :comment
+                title = :title, url = :url, image_url = :image_url, site = :site, comment = :comment, ingredients = :ingredients
             WHERE
                 id = :recipe_id
         """.trimIndent()

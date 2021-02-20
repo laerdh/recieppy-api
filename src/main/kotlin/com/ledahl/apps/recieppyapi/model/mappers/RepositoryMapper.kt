@@ -71,6 +71,7 @@ class RepositoryMapper {
                         comment = item.getString("comment"),
                         shared = item.getBoolean("shared"),
                         created = item.getTimestamp("created").toLocalDateTime(),
+                        ingredients = item.getString("ingredients"),
                         createdBy = item.getString("created_by")
                 )
             }

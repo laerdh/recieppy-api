@@ -8,6 +8,7 @@ type Recipe {
     shared: Boolean!
     comment: String
     created: String!
+    ingredients: String
     createdBy: String
 }
 
@@ -24,6 +25,7 @@ input RecipeInput {
     site: String
     recipeListId: ID!
     tags: [ID]
+    ingredients: String
     comment: String
 }
 
