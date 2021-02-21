@@ -7,7 +7,6 @@ on:
       - master
     repository_dispatch:
         types: run-workflow
-    
 
 jobs:
   build:
@@ -23,7 +22,7 @@ jobs:
       run: |
         export APP_VERSION="$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print tolower(a[2]) }')"
         echo $APP_VERSION >> app_version.txt
-        echo "::set-env name=VERSION_NAME::$APP_VERSION"
+        echo "VERSION_NAME=${APP_VERSION}" >> $GITHUB_ENV
     - uses: actions/upload-artifact@v2
       with:
         name: app_version
@@ -69,7 +68,7 @@ jobs:
     - shell: bash
       run: |
         export APP_VERSION=`cat app_version.txt`
-        echo "::set-env name=VERSION_NAME::$APP_VERSION"
+        echo "VERSION_NAME=${APP_VERSION}" >> $GITHUB_ENV
     
     - name: Deploy to prod
       uses: appleboy/ssh-action@master
