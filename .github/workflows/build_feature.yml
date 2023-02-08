@@ -2,9 +2,9 @@
 name: build_feature
 
 on:
-  push:
-    branches:
-      - feature/*
+  workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * MON'
   pull_request:
     branches: [ develop ]
     
