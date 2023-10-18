@@ -1,4 +1,4 @@
-![build-push-prod](https://github.com/laerdh/recieppy-api/workflows/build-push-prod/badge.svg?branch=master)
+[![build-push-stage](https://github.com/laerdh/recieppy-api/actions/workflows/build_push_stage.yml/badge.svg)](https://github.com/laerdh/recieppy-api/actions/workflows/build_push_stage.yml)
 # recieppy-api
 
 GraphQL API (OAuth2 Resource Server) for the Recieppy mobile apps.
