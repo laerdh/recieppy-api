@@ -14,12 +14,12 @@ import org.springframework.stereotype.Controller
 @Controller
 class TagController(@Autowired private val recipeService: RecipeService) {
     @QueryMapping
-    fun getTags(): List<Tag> {
+    fun tags(): List<Tag> {
         return recipeService.getTags()
     }
 
     @QueryMapping
-    fun getTagsForLocation(@AuthenticationPrincipal user: User, @Argument locationId: Long): List<Tag> {
+    fun tagsForLocation(@AuthenticationPrincipal user: User, @Argument locationId: Long): List<Tag> {
         return recipeService.getTagsForLocation(user, locationId)
     }
 

@@ -18,13 +18,13 @@ class UserController(@Autowired private val authService: AuthService,
                      @Autowired private val userService: UserService,
                      @Autowired private val locationService: LocationService) {
     @QueryMapping
-    fun getUsers(@AuthenticationPrincipal user: User): List<User> {
-        return userService.getUsers(user)
+    fun user(@AuthenticationPrincipal user: User): User? {
+        return user
     }
 
     @QueryMapping
-    fun getUser(@AuthenticationPrincipal user: User): User? {
-        return user
+    fun users(@AuthenticationPrincipal user: User): List<User> {
+        return userService.getUsers(user)
     }
 
     @MutationMapping

@@ -20,12 +20,12 @@ class LocationController(@Autowired private val locationService: LocationService
                          @Autowired private val recipeListService: RecipeListService,
                          @Autowired private val recipePlanService: RecipePlanService) {
     @QueryMapping
-    fun getLocations(@AuthenticationPrincipal user: User): List<Location> {
+    fun locations(@AuthenticationPrincipal user: User): List<Location> {
         return locationService.getLocations(user)
     }
 
     @QueryMapping
-    fun getLocationForInviteCode(@Argument inviteCode: String): String? {
+    fun locationForInviteCode(@Argument inviteCode: String): String? {
         return locationService.getLocationNameForInviteCode(inviteCode)
     }
 

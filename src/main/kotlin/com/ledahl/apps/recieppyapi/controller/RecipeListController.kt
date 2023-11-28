@@ -18,12 +18,12 @@ import org.springframework.stereotype.Controller
 class RecipeListController(@Autowired private val recipeListService: RecipeListService,
                            @Autowired private val recipeService: RecipeService) {
     @QueryMapping
-    fun getRecipeList(@AuthenticationPrincipal user: User, @Argument id: Long): RecipeList? {
+    fun recipeList(@AuthenticationPrincipal user: User, @Argument id: Long): RecipeList? {
         return recipeListService.getRecipeList(user, id)
     }
 
     @QueryMapping
-    fun getRecipeLists(@AuthenticationPrincipal user: User, @Argument locationId: Long): List<RecipeList> {
+    fun recipeLists(@AuthenticationPrincipal user: User, @Argument locationId: Long): List<RecipeList> {
         return recipeListService.getRecipeListsForUser(user, locationId)
     }
 
