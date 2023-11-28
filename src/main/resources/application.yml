@@ -33,7 +33,9 @@ logging:
 ---
 
 spring:
-  profiles: development
+  config:
+    activate:
+      on-profile: development
 
   application:
     name: recieppy-dev-api
@@ -53,7 +55,9 @@ spring:
 ---
 
 spring:
-  profiles: production
+  config:
+    activate:
+      on-profile: production
 
   application:
     name: recieppy-api
