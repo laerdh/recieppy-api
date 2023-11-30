@@ -11,8 +11,7 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.filter.CommonsRequestLoggingFilter
 
 @Configuration
-class ResourceServerConfiguration(
-    @Autowired private val jwtProperties: JwtProperties) {
+class ResourceServerConfiguration(@Autowired private val jwtProperties: JwtProperties) {
 
     @Bean
     fun filterChain(http: HttpSecurity?): SecurityFilterChain? {
