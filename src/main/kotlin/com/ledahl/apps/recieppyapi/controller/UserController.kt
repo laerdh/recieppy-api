@@ -1,5 +1,6 @@
 package com.ledahl.apps.recieppyapi.controller
 
+import com.ledahl.apps.recieppyapi.auth.JwtPrincipal
 import com.ledahl.apps.recieppyapi.model.Location
 import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.service.AuthService
@@ -18,18 +19,18 @@ class UserController(@Autowired private val authService: AuthService,
                      @Autowired private val userService: UserService,
                      @Autowired private val locationService: LocationService) {
     @QueryMapping
-    fun user(@AuthenticationPrincipal user: User): User? {
-        return user
+    fun user(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal): User? {
+        return jwtPrincipal.user
     }
 
     @QueryMapping
-    fun users(@AuthenticationPrincipal user: User): List<User> {
-        return userService.getUsers(user)
+    fun users(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal): List<User> {
+        return userService.getUsers(jwtPrincipal.user)
     }
 
     @MutationMapping
-    fun savePushToken(@AuthenticationPrincipal user: User, @Argument pushToken: String?): Int? {
-        return userService.savePushToken(pushToken, user)
+    fun savePushToken(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument pushToken: String?): Int? {
+        return userService.savePushToken(pushToken, jwtPrincipal.user)
     }
 
     @SchemaMapping

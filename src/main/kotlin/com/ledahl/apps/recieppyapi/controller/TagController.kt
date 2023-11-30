@@ -1,7 +1,7 @@
 package com.ledahl.apps.recieppyapi.controller
 
+import com.ledahl.apps.recieppyapi.auth.JwtPrincipal
 import com.ledahl.apps.recieppyapi.model.Tag
-import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.TagInput
 import com.ledahl.apps.recieppyapi.service.RecipeService
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,8 +19,8 @@ class TagController(@Autowired private val recipeService: RecipeService) {
     }
 
     @QueryMapping
-    fun tagsForLocation(@AuthenticationPrincipal user: User, @Argument locationId: Long): List<Tag> {
-        return recipeService.getTagsForLocation(user, locationId)
+    fun tagsForLocation(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument locationId: Long): List<Tag> {
+        return recipeService.getTagsForLocation(jwtPrincipal.user, locationId)
     }
 
     @MutationMapping

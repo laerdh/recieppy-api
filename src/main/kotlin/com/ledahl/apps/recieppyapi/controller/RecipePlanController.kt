@@ -1,9 +1,9 @@
 package com.ledahl.apps.recieppyapi.controller
 
+import com.ledahl.apps.recieppyapi.auth.JwtPrincipal
 import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.RecipePlan
 import com.ledahl.apps.recieppyapi.model.RecipePlanEvent
-import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.RecipePlanEventInput
 import com.ledahl.apps.recieppyapi.service.RecipePlanService
 import com.ledahl.apps.recieppyapi.service.RecipeService
@@ -19,52 +19,52 @@ import org.springframework.stereotype.Controller
 class RecipePlanController(@Autowired private val recipePlanService: RecipePlanService,
                            @Autowired private val recipeService: RecipeService) {
     @QueryMapping
-    fun recipePlan(@AuthenticationPrincipal user: User, @Argument locationId: Long, @Argument weekNumber: Int): RecipePlan {
+    fun recipePlan(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument locationId: Long, @Argument weekNumber: Int): RecipePlan {
         return recipePlanService.getRecipePlanForWeek(
-            user = user,
+            user = jwtPrincipal.user,
             locationId = locationId,
             weekNumber = weekNumber
         )
     }
 
     @MutationMapping
-    fun newRecipePlanEvent(@AuthenticationPrincipal user: User, @Argument locationId: Long, @Argument recipePlanEvent: RecipePlanEventInput): RecipePlan? {
+    fun newRecipePlanEvent(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument locationId: Long, @Argument recipePlanEvent: RecipePlanEventInput): RecipePlan? {
         return recipePlanService.createRecipePlanEvent(
-            user = user,
+            user = jwtPrincipal.user,
             locationId = locationId,
             recipePlanEvent = recipePlanEvent
         )
     }
 
     @MutationMapping
-    fun updateRecipePlanEvent(@AuthenticationPrincipal user: User, @Argument locationId: Long, @Argument recipePlanEvent: RecipePlanEventInput): RecipePlan? {
+    fun updateRecipePlanEvent(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument locationId: Long, @Argument recipePlanEvent: RecipePlanEventInput): RecipePlan? {
         return recipePlanService.updateRecipePlanEvent(
-            user = user,
+            user = jwtPrincipal.user,
             locationId = locationId,
             recipePlanEvent = recipePlanEvent
         )
     }
 
     @MutationMapping
-    fun deleteRecipePlanEvent(@AuthenticationPrincipal user: User, @Argument locationId: Long, @Argument recipePlanEvent: RecipePlanEventInput): RecipePlan? {
+    fun deleteRecipePlanEvent(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument locationId: Long, @Argument recipePlanEvent: RecipePlanEventInput): RecipePlan? {
         return recipePlanService.deleteRecipePlanEvent(
-            user = user,
+            user = jwtPrincipal.user,
             locationId = locationId,
             recipePlanEvent = recipePlanEvent
         )
     }
 
     @SchemaMapping
-    fun events(@AuthenticationPrincipal user: User, recipePlan: RecipePlan): List<RecipePlanEvent> {
+    fun events(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, recipePlan: RecipePlan): List<RecipePlanEvent> {
         return recipePlanService.getRecipePlanEventsByWeek(
-            user = user,
+            user = jwtPrincipal.user,
             locationId = recipePlan.locationId,
             weekNumber = recipePlan.weekNumber
         )
     }
 
     @SchemaMapping
-    fun recipe(@AuthenticationPrincipal user: User, recipePlanEvent: RecipePlanEvent): Recipe? {
-        return recipeService.getRecipeForRecipePlan(user, recipePlanEvent.recipeId)
+    fun recipe(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, recipePlanEvent: RecipePlanEvent): Recipe? {
+        return recipeService.getRecipeForRecipePlan(jwtPrincipal.user, recipePlanEvent.recipeId)
     }
 }

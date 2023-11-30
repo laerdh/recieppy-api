@@ -1,8 +1,8 @@
 package com.ledahl.apps.recieppyapi.controller
 
+import com.ledahl.apps.recieppyapi.auth.JwtPrincipal
 import com.ledahl.apps.recieppyapi.model.Recipe
 import com.ledahl.apps.recieppyapi.model.RecipeList
-import com.ledahl.apps.recieppyapi.model.User
 import com.ledahl.apps.recieppyapi.model.input.RecipeListInput
 import com.ledahl.apps.recieppyapi.service.RecipeListService
 import com.ledahl.apps.recieppyapi.service.RecipeService
@@ -18,32 +18,32 @@ import org.springframework.stereotype.Controller
 class RecipeListController(@Autowired private val recipeListService: RecipeListService,
                            @Autowired private val recipeService: RecipeService) {
     @QueryMapping
-    fun recipeList(@AuthenticationPrincipal user: User, @Argument id: Long): RecipeList? {
-        return recipeListService.getRecipeList(user, id)
+    fun recipeList(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument id: Long): RecipeList? {
+        return recipeListService.getRecipeList(jwtPrincipal.user, id)
     }
 
     @QueryMapping
-    fun recipeLists(@AuthenticationPrincipal user: User, @Argument locationId: Long): List<RecipeList> {
-        return recipeListService.getRecipeListsForUser(user, locationId)
+    fun recipeLists(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument locationId: Long): List<RecipeList> {
+        return recipeListService.getRecipeListsForUser(jwtPrincipal.user, locationId)
     }
 
     @MutationMapping
-    fun newRecipeList(@AuthenticationPrincipal user: User, @Argument recipeList: RecipeListInput): RecipeList? {
-        return recipeListService.createRecipeList(user, recipeList)
+    fun newRecipeList(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument recipeList: RecipeListInput): RecipeList? {
+        return recipeListService.createRecipeList(jwtPrincipal.user, recipeList)
     }
 
     @MutationMapping
-    fun deleteRecipeList(@AuthenticationPrincipal user: User, @Argument id: Long): Long {
-        return recipeListService.deleteRecipeList(user, id)
+    fun deleteRecipeList(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument id: Long): Long {
+        return recipeListService.deleteRecipeList(jwtPrincipal.user, id)
     }
 
     @MutationMapping
-    fun renameRecipeList(@AuthenticationPrincipal user: User, @Argument id: Long, @Argument newName: String): RecipeList? {
-        return recipeListService.renameRecipeList(user, id, newName)
+    fun renameRecipeList(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, @Argument id: Long, @Argument newName: String): RecipeList? {
+        return recipeListService.renameRecipeList(jwtPrincipal.user, id, newName)
     }
 
     @SchemaMapping
-    fun recipes(@AuthenticationPrincipal user: User, recipeList: RecipeList): List<Recipe> {
-        return recipeService.getRecipesForRecipeList(user.id, recipeList)
+    fun recipes(@AuthenticationPrincipal jwtPrincipal: JwtPrincipal, recipeList: RecipeList): List<Recipe> {
+        return recipeService.getRecipesForRecipeList(jwtPrincipal.user.id, recipeList)
     }
 }
