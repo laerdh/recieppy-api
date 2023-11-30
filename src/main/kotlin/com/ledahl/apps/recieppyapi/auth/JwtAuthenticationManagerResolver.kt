@@ -12,7 +12,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtIss
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-class JwtAuthenticationManagerResolver(private val trustedIssuers: List<JwtIssuerProperties>) : AuthenticationManagerResolver<HttpServletRequest> {
+class JwtAuthenticationManagerResolver(private val jwtAuthenticationUserConverter: JwtAuthenticationPrincipalConverter,
+                                       private val trustedIssuers: List<JwtIssuerProperties>) : AuthenticationManagerResolver<HttpServletRequest> {
 
     override fun resolve(request: HttpServletRequest?): AuthenticationManager {
         val authenticationManagerResolver = JwtIssuerAuthenticationManagerResolver(object : AuthenticationManagerResolver<String> {
@@ -33,7 +34,11 @@ class JwtAuthenticationManagerResolver(private val trustedIssuers: List<JwtIssue
                 val hasIssuerUri = jwkSetUri.startsWith("http://") || jwkSetUri.startsWith("https://")
                 val jwtDecoder = if (hasIssuerUri) JwtDecoders.fromIssuerLocation(issuer) else getJwtSecretDecoder(jwkSetUri)
 
-                return AuthenticationManager { authentication -> JwtAuthenticationProvider(jwtDecoder).authenticate(authentication) }
+                return AuthenticationManager { authentication ->
+                    val authenticationProvider = JwtAuthenticationProvider(jwtDecoder)
+                    authenticationProvider.setJwtAuthenticationConverter(jwtAuthenticationUserConverter)
+                    authenticationProvider.authenticate(authentication)
+                }
             }
         })
 
