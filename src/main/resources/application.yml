@@ -50,7 +50,13 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${OAUTH2_JWT_ENDPOINT}
+          issuers:
+            - name: Keycloak
+              issuer-uri: ${OAUTH2_ISSUER_URI}
+              jwk-set-uri: ${OAUTH2_JWK_URI}
+            - name: Supabase
+              issuer-uri: ${SUPABASE_ISSUER_URI}
+              jwk-set-uri: ${SUPABASE_JWT_SECRET}
 
 ---
 
@@ -72,4 +78,10 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${OAUTH2_JWT_ENDPOINT}
+          issuers:
+            - name: Keycloak
+              issuer-uri: ${OAUTH2_ISSUER_URI}
+              jwk-set-uri: ${OAUTH2_JWK_URI}
+            - name: Supabase
+              issuer-uri: ${SUPABASE_ISSUER_URI}
+              jwk-set-uri: ${SUPABASE_JWT_SECRET}
