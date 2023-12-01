@@ -23,10 +23,10 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
     fun getUsers(): List<User> {
         return try {
             jdbcTemplate.query("""
-                SELECT u.id, phone_number, first_name, last_name, email, subject
+                SELECT u.id, u.phone_number, u.first_name, u.last_name, u.email, u.subject, r.name AS user_role
                 FROM user_account u
-                LEFT JOIN user_role ur ON u.id = ur.user_id
-                LEFT JOIN role r ON ur.role_id = r.id
+                INNER JOIN user_role ur ON u.id = ur.user_id
+                INNER JOIN role r ON ur.role_id = r.id
         """.trimIndent()) { rs, _ ->
                 mapper.map(rs)
             }
