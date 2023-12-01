@@ -1,6 +1,6 @@
 package com.ledahl.apps.recieppyapi.exception
 
-import graphql.ErrorType
+import graphql.ErrorClassification
 import graphql.ExceptionWhileDataFetching
 import graphql.GraphQLError
 import graphql.language.SourceLocation
@@ -13,7 +13,7 @@ class GraphQLErrorAdapter(private val error: GraphQLError): GraphQLError {
         }
     }
 
-    override fun getErrorType(): ErrorType {
+    override fun getErrorType(): ErrorClassification {
         return error.errorType
     }
 

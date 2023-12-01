@@ -2,31 +2,28 @@
 name: build-push-prod
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
-    repository_dispatch:
-        types: run-workflow
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      VERSION_NAME: ${{ steps.set-version.outputs.VERSION_NAME }}
 
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-java@v1
       with:
-        java-version: '11'
+        java-version: '17'
 
-    - name: Set app version
+    - name: Set version
+      id: set-version
       run: |
         export APP_VERSION="$(grep "version" build.gradle | awk 'NR==2{ split($3,a,"'\''"); print tolower(a[2]) }')"
-        echo $APP_VERSION >> app_version.txt
-        echo "VERSION_NAME=${APP_VERSION}" >> $GITHUB_ENV
-    - uses: actions/upload-artifact@v2
-      with:
-        name: app_version
-        path: app_version.txt
+        echo "VERSION_NAME=${APP_VERSION}" >> "$GITHUB_OUTPUT"
 
     - shell: bash
       run: mkdir src/main/resources/config
@@ -53,27 +50,30 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: laerdh/recieppy-api
-        tags: ${{ env.VERSION_NAME }}
+        tags: ${{ steps.set-version.outputs.VERSION_NAME }}
 
   push:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get app version
-      uses: actions/download-artifact@v2
-      with:
-        name: app_version
-
-    - shell: bash
-      run: |
-        export APP_VERSION=`cat app_version.txt`
-        echo "VERSION_NAME=${APP_VERSION}" >> $GITHUB_ENV
-    
     - name: Deploy to prod
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: ${{ secrets.SSH_DEPLOY }} -r ${{ secrets.DOCKER_USERNAME }} -t ${{ secrets.DOCKER_PASSWORD }} -i ${{ env.VERSION_NAME }} -l ${{ secrets.DATABASE_URL }} -d ${{ secrets.DATABASE_SCHEMA }} -u ${{ secrets.DATABASE_USER }} -p ${{ secrets.DATABASE_PASSWORD }} -v ${{ secrets.OIDC_JWT_ENDPOINT }} -m ${{ secrets.UNSPLASH_API_KEY }}
+        script: |
+          ${{ secrets.SSH_DEPLOY }} \
+          ${{ secrets.DOCKER_USERNAME }} \
+          ${{ secrets.DOCKER_PASSWORD }} \
+          ${{ needs.build.outputs.VERSION_NAME }} \
+          ${{ secrets.DATABASE_URL }} \
+          ${{ secrets.DATABASE_SCHEMA }} \
+          ${{ secrets.DATABASE_USER }} \
+          ${{ secrets.DATABASE_PASSWORD }} \
+          ${{ secrets.OAUTH2_ISSUER_URI }} \
+          ${{ secrets.OAUTH2_JWK_URI }} \
+          ${{ secrets.SUPABASE_ISSUER_URI }} \
+          ${{ secrets.SUPABASE_JWT_SECRET }} \
+          ${{ secrets.UNSPLASH_API_KEY }}
