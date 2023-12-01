@@ -23,7 +23,7 @@ class UserRepository(@Autowired private val jdbcTemplate: JdbcTemplate,
     fun getUsers(): List<User> {
         return try {
             jdbcTemplate.query("""
-                SELECT u.id, phone_number, first_name, last_name, email, external_id
+                SELECT u.id, phone_number, first_name, last_name, email, subject
                 FROM user_account u
                 LEFT JOIN user_role ur ON u.id = ur.user_id
                 LEFT JOIN role r ON ur.role_id = r.id
