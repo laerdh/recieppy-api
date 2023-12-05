@@ -3,7 +3,7 @@ spring:
     name: recieppy-api
 
   mail:
-    host: 172.17.0.1
+    host: ${MAIL_HOST}
 
   # THYMELEAF (ThymeleafAutoConfiguration)
   thymeleaf:
